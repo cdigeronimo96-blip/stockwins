@@ -1015,6 +1015,21 @@ NAV_CSS = """
     padding: 0;
     line-height: 1;
 }
+/* ── Vertically center ALL content in the topbar row ── */
+[data-testid="stMainBlockContainer"] [data-testid="stHorizontalBlock"]:first-of-type {
+    align-items: center !important;
+    min-height: 52px !important;
+}
+[data-testid="stMainBlockContainer"] [data-testid="stHorizontalBlock"]:first-of-type > [data-testid="column"] {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: flex-start !important;
+    padding-top: 0 !important;
+    padding-bottom: 0 !important;
+}
+[data-testid="stMainBlockContainer"] [data-testid="stHorizontalBlock"]:first-of-type > [data-testid="column"] > div {
+    width: 100% !important;
+}
 /* Collapse the button's container height to zero, overflow visible */
 .element-container:has(.sw-logo-click-target) + .element-container {
     height: 0px !important;
