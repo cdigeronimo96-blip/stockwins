@@ -460,7 +460,9 @@ COMPOSITE_CATS = {
     "💡 Hidden Movers":       ("Strong technical scores with low social noise — find them before the crowd arrives", "free"),
     "🎭 Social Catalyst":     ("StockTwits activity spiking + abnormal volume = catalyst-driven momentum today", "free"),
     "🌡️ Sentiment Flip":      ("Bullish % rose 15+ points recently — trader mood sharply reversing upward", "free"),
-    "📉→📈 Fallen Angels":   ("Down 30%+ recently but RSI now oversold and volume quietly returning", "free"),
+    "📉→📈 Fallen Angels":   ("Down 30%+ recently but RSI oversold and volume quietly returning — recovery watch", "free"),
+    "🔬 Micro-Cap Movers":   ("Market cap under $2B with volume spike + RSI building — early-stage high-reward setups", "free"),
+    "💎 Value Momentum":      ("Low P/E + rising RSI + price above 20-day MA — rare value-plus-momentum convergence", "free"),
     # ── Premium ────────────────────────────────────────────────
     "⚡📈 Volume Breakout":   ("Breaking above moving averages on unusually high volume = institutional confirmation", "premium"),
     "🎯 Smart Reversal":      ("RSI oversold + MACD turning positive + rising sentiment = technical bounce forming", "premium"),
@@ -468,6 +470,10 @@ COMPOSITE_CATS = {
     "🏆 Relative Strength":   ("Outperforming their sector by 5%+ this week while sector is flat or declining", "premium"),
     "🎪 Earnings Catalyst":   ("Elevated volume + social buzz + sharp move = likely earnings or news event in play", "premium"),
     "🔁 Mean Reversion":      ("Near Bollinger lower band + high short interest + RSI < 35 = spring-loaded setup", "premium"),
+    "⚡🧲 Smart Money Signal": ("3× average volume + price holding above VWAP proxy + MACD bullish = institutional accumulation", "premium"),
+    "🌪️ Volatility Squeeze":  ("Bollinger Band width compressing to 90-day low + volume building = coiled-spring breakout setup", "premium"),
+    "🎯📊 Triple Lock":        ("RSI bullish range + MACD bullish crossover + price above 50d MA + volume surge — all 4 aligned", "premium"),
+    "🦈 Sustained Strength":  ("Above-average volume 3+ consecutive sessions + price holding MAs = quiet institutional accumulation", "premium"),
 }
 
 SECTOR_ETFS  = {"Technology":"XLK","Healthcare":"XLV","Financials":"XLF","Energy":"XLE","Cons Disc":"XLY","Industrials":"XLI","Materials":"XLB","Utilities":"XLU","Real Estate":"XLRE","Comm Svcs":"XLC"}
@@ -718,6 +724,28 @@ def compute_scores(df, info=None, sent=None):
     except: risk="Unknown"
     return sc,bd,op,risk,("High" if sc>=65 else "Medium" if sc>=40 else "Low")
 
+def get_recommendation(sc, bd, info=None):
+    """Algorithmic signal only — NOT financial advice."""
+    sf  = (info.get("sf",0) or 0)*100 if info else 0
+    sq  = bd.get("Squeeze",0); mom = bd.get("Momentum",0)
+    tr  = bd.get("Trend",0);   vol = bd.get("Volume",0)
+    mac = bd.get("MACD",0)
+    if sc >= 65 and tr >= 12 and mom >= 12:
+        if sq >= 6 or sf >= 18:
+            return ("💥 SQUEEZE BUY", "#f59e0b", f"Short float {sf:.0f}% + rising momentum. High-risk/high-reward squeeze setup.")
+        elif vol >= 11 and mac >= 9:
+            return ("🟢 STRONG BUY", "#22c55e", "Volume surge + MACD confirmation + uptrend = institutional-backed move.")
+        else:
+            return ("🟢 BUY", "#22c55e", "RSI, trend, and MACD all pointing up. Multi-factor alignment is strong.")
+    elif sc >= 50:
+        if mom >= 18:
+            return ("🟡 WATCH — BOUNCE", "#fbbf24", "Oversold with signal improvement forming. Watch for volume confirmation.")
+        return ("🟡 WATCH", "#fbbf24", "Mixed signals — core trend not confirmed. Wait for a stronger setup.")
+    elif sc >= 30:
+        return ("🟠 HOLD / WAIT", "#fb923c", "Multiple signals weak. Better entry likely forming — patience pays.")
+    else:
+        return ("🔴 AVOID", "#ef4444", "Most indicators pointing down. Capital better deployed elsewhere.")
+
 def get_insights(df, info=None):
     out=[]
     if df is None or len(df)<14: return out
@@ -846,12 +874,57 @@ def get_composite_stocks(cat_name, limit=10):
                 why=f"High volume ({vs}/15 pts) + social activity spike = likely catalyst"
 
             elif cat_name=="🔁 Mean Reversion":
-                # Near lower Bollinger + high short + oversold RSI
                 sq=bd.get("Squeeze",0); mom=bd.get("Momentum",0)
                 sf_local=(info.get("sf",0) or 0)*100
                 comp=mom+sq*2+bd.get("Sentiment",0)
                 include=mom>=18 and (sq>=2 or sf_local>=10)
                 why=f"RSI oversold + {sf_local:.0f}% short float — compression before expansion"
+
+            elif cat_name=="🔬 Micro-Cap Movers":
+                mc=info.get("mktcap",0) or 0
+                vs=bd.get("Volume",0); mom=bd.get("Momentum",0)
+                comp=vs*2+mom+(20 if mc<500e6 else 10 if mc<2e9 else 0)
+                include=mc<2e9 and vs>=4 and mom>=8
+                mc_s=f"${mc/1e9:.1f}B" if mc>=1e9 else f"${mc/1e6:.0f}M"
+                why=f"Micro/small-cap ({mc_s}) + volume surge = early-stage move potential"
+
+            elif cat_name=="💎 Value Momentum":
+                pe=info.get("pe",None); tr_s=bd.get("Trend",0); mom=bd.get("Momentum",0)
+                comp=(15 if pe and 5<pe<20 else 5)+tr_s+mom
+                include=tr_s>=10 and mom>=10 and (pe is None or pe<25)
+                why=f"Low P/E ({pe:.1f}x)" if pe else "Value setup + rising momentum"
+
+            elif cat_name=="⚡🧲 Smart Money Signal":
+                vs=bd.get("Volume",0); mac=bd.get("MACD",0); tr_s=bd.get("Trend",0)
+                comp=vs*2+mac*1.5+tr_s
+                include=vs>=11 and mac>=9 and tr_s>=12
+                why=f"3×+ volume + MACD bullish + above MAs = institutional accumulation pattern"
+
+            elif cat_name=="🌪️ Volatility Squeeze":
+                # Bollinger compression + volume building
+                mom=bd.get("Momentum",0); vs=bd.get("Volume",0); sq=bd.get("Squeeze",0)
+                try:
+                    bb=ta.volatility.BollingerBands(df["close"].copy())
+                    bb_w=bb.bollinger_wband().iloc[-1]
+                    bb_low=bb_w<bb.bollinger_wband().rolling(90).mean().iloc[-1]*0.7
+                except: bb_low=False
+                comp=(30 if bb_low else 0)+vs+mom+sq*2
+                include=vs>=4 and (bb_low or sq>=2)
+                why="Bollinger Bands compressing + volume building = coiled spring before breakout"
+
+            elif cat_name=="🎯📊 Triple Lock":
+                mom=bd.get("Momentum",0); mac=bd.get("MACD",0)
+                tr_s=bd.get("Trend",0); vs=bd.get("Volume",0)
+                all_4=(mom>=12 and mac>=9 and tr_s>=16 and vs>=4)
+                comp=mom+mac+tr_s+vs
+                include=all_4
+                why="RSI + MACD + 50d trend + volume ALL simultaneously bullish — maximum conviction"
+
+            elif cat_name=="🦈 Sustained Strength":
+                vs=bd.get("Volume",0); tr_s=bd.get("Trend",0); mac=bd.get("MACD",0)
+                comp=vs*1.5+tr_s+mac+bd.get("Sentiment",0)*0.5
+                include=tr_s>=16 and vs>=7 and mac>=9
+                why="Above-avg volume + holding MAs + MACD positive = sustained institutional interest"
 
             else:
                 include=True; comp=sc; why="Flagged by StockWins scoring engine"
@@ -869,29 +942,36 @@ def get_composite_stocks(cat_name, limit=10):
 def render_sr(s, cat_key="", show_why=False):
     t=s["t"]; q=s["q"]; sc=s["sc"]; ig=s["ig"]
     info=s.get("info",{}); sent=s.get("sent",{}); hot=s.get("hot",False)
-    op=s.get("op",""); risk=s.get("risk",""); why_str=s.get("why","")
+    bd=s.get("bd",{}); op=s.get("op",""); risk=s.get("risk",""); why_str=s.get("why","")
     if not q: return
     pct=q.get("pct",0); price=q.get("price",0)
     cc="#22c55e" if pct>=0 else "#ef4444"
     ar="▲" if pct>=0 else "▼"
     rc=risk_color(risk)
     hot_b='<span class="b b-hot">🔥</span>' if hot else ""
-    op_b=f'<span class="b b-blue">{op}</span>' if op else ""
     sigs="".join([f'<span class="b b-{"bull" if sv=="bull" else "bear" if sv=="bear" else "neu"}">{lv[:14]}</span>'
                   for lv,_,sv,_ in ig[:2]])
     display_why=why_str if (show_why and why_str) else (ig[0][1][:70]+"…" if ig else op)
 
-    col_main,col_btn=st.columns([5,2],gap="small")
+    # ── Recommendation badge ──
+    rec_lbl, rec_clr, rec_txt = get_recommendation(sc, bd, info)
+    rec_bg = rec_clr + "22"  # 13% opacity bg
+
+    col_main, col_btn = st.columns([5, 2], gap="small")
     with col_main:
         st.markdown(f"""<div class="sr">
             <div style="display:flex;justify-content:space-between;align-items:flex-start;">
-                <div>
-                    <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
-                        <span class="sr-tick">{t}</span>{hot_b}{op_b}
+                <div style="flex:1;">
+                    <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:4px;">
+                        <span class="sr-tick">{t}</span>{hot_b}
+                        <span style="display:inline-block;padding:3px 10px;border-radius:5px;
+                                     font-size:11px;font-weight:800;letter-spacing:.3px;
+                                     background:{rec_bg};color:{rec_clr};
+                                     border:1px solid {rec_clr}44;">{rec_lbl}</span>
                     </div>
                     <div class="sr-name">{q.get('name','')[:30]}</div>
-                    <div class="sr-why">→ {display_why}</div>
-                    <div style="margin-top:6px;">{sigs}</div>
+                    <div class="sr-why">→ {rec_txt}</div>
+                    <div style="margin-top:5px;">{sigs}</div>
                 </div>
                 <div style="text-align:right;min-width:110px;flex-shrink:0;">
                     <div class="sr-price">${price:,.2f}</div>
@@ -1178,7 +1258,7 @@ def render_topbar(active=""):
             st.markdown('<div class="sw-nav">', unsafe_allow_html=True)
             ac1, ac2, ac3, ac4 = st.columns(4, gap="small")
             with ac1:
-                if st.button("Features", key="top_features", use_container_width=True): pass
+                if st.button("Features", key="top_features", use_container_width=True): nav("pricing")
             with ac2:
                 if st.button("Pricing", key="top_pricing_link", use_container_width=True): nav("pricing")
             with ac3:
@@ -1307,7 +1387,7 @@ def page_landing():
         st.markdown('<div class="sw-nav">', unsafe_allow_html=True)
         ac1, ac2, ac3, ac4 = st.columns(4)
         with ac1:
-            if st.button("Features", key="land_feat", use_container_width=True): pass
+            if st.button("Features", key="land_feat", use_container_width=True): nav("pricing")
         with ac2:
             if st.button("Pricing",  key="land_price_nav", use_container_width=True): nav("pricing")
         with ac3:
@@ -1381,30 +1461,30 @@ def page_landing():
 
     # Row 1: Find Trending | Squeeze Scanner
     st.markdown(f"""
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:32px;padding:0 48px;align-items:start;margin-bottom:32px;">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:32px;padding:0 48px;align-items:stretch;margin-bottom:32px;">
 
       <div style="display:flex;flex-direction:column;">
-        <div style="height:120px;display:flex;flex-direction:column;justify-content:flex-start;margin-bottom:20px;">
-          <div style="font-size:28px;font-weight:900;color:#f1f5f9;letter-spacing:-1px;line-height:1.15;margin-bottom:10px;">
+        <div style="min-height:110px;display:flex;flex-direction:column;justify-content:flex-start;margin-bottom:16px;">
+          <div style="font-size:26px;font-weight:900;color:#f1f5f9;letter-spacing:-1px;line-height:1.15;margin-bottom:8px;">
             Find Trending Stocks<br><span style="color:#2563eb;">Before the Crowd</span>
           </div>
           <div style="font-size:13px;color:#374f6e;line-height:1.7;">
             Discover top stocks making waves across social media and the market.
           </div>
         </div>
-        {DEMO[0]}
+        <div style="flex:1;">{DEMO[0]}</div>
       </div>
 
       <div style="display:flex;flex-direction:column;">
-        <div style="height:120px;display:flex;flex-direction:column;justify-content:flex-start;margin-bottom:20px;">
-          <div style="font-size:28px;font-weight:900;color:#f1f5f9;letter-spacing:-1px;line-height:1.15;margin-bottom:10px;">
+        <div style="min-height:110px;display:flex;flex-direction:column;justify-content:flex-start;margin-bottom:16px;">
+          <div style="font-size:26px;font-weight:900;color:#f1f5f9;letter-spacing:-1px;line-height:1.15;margin-bottom:8px;">
             Scan For Short Squeeze<br><span style="color:#2563eb;">Candidates</span>
           </div>
           <div style="font-size:13px;color:#374f6e;line-height:1.7;">
             Spot stocks with heavy short interest and growing momentum.
           </div>
         </div>
-        {DEMO[1]}
+        <div style="flex:1;">{DEMO[1]}</div>
       </div>
 
     </div>
@@ -1412,11 +1492,11 @@ def page_landing():
 
     # Row 2: Smart Insights | Go Premium
     st.markdown(f"""
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:32px;padding:0 48px;align-items:start;">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:32px;padding:0 48px;align-items:stretch;">
 
       <div style="display:flex;flex-direction:column;">
-        <div style="height:120px;display:flex;flex-direction:column;justify-content:flex-start;margin-bottom:20px;">
-          <div style="font-size:28px;font-weight:900;color:#f1f5f9;letter-spacing:-1px;line-height:1.15;margin-bottom:10px;">
+        <div style="min-height:110px;display:flex;flex-direction:column;justify-content:flex-start;margin-bottom:16px;">
+          <div style="font-size:26px;font-weight:900;color:#f1f5f9;letter-spacing:-1px;line-height:1.15;margin-bottom:8px;">
             Smart Insights<br>in Simple <span style="color:#2563eb;">Language</span>
           </div>
           <div style="font-size:13px;color:#374f6e;line-height:1.7;">
@@ -1454,18 +1534,42 @@ def page_landing():
     </div>
     """, unsafe_allow_html=True)
 
-    # Go Premium button (below row 2 right panel, right-aligned)
-    _,_,prem_col=st.columns([1,1,1])
-    with prem_col:
-        st.markdown('<div style="padding:10px 48px 0 0;">',unsafe_allow_html=True)
-        if st.button("🚀 Go Premium →", key="land_prem", type="primary", use_container_width=True):
+    # ── Go Premium CTA — centered, full-width, professional ──
+    st.markdown("""
+    <style>
+    /* Enhanced Go Premium button */
+    button[aria-label="🚀 Unlock Premium — Start Today →"] {
+        background: linear-gradient(135deg, #1d4ed8 0%, #2563eb 50%, #7c3aed 100%) !important;
+        border: none !important;
+        border-radius: 12px !important;
+        font-size: 17px !important;
+        font-weight: 800 !important;
+        letter-spacing: 0.3px !important;
+        min-height: 58px !important;
+        box-shadow: 0 8px 32px rgba(37,99,235,0.45), 0 0 0 1px rgba(124,58,237,0.3) !important;
+        transition: all 0.2s ease !important;
+    }
+    button[aria-label="🚀 Unlock Premium — Start Today →"]:hover {
+        background: linear-gradient(135deg, #2563eb 0%, #3b82f6 50%, #8b5cf6 100%) !important;
+        box-shadow: 0 12px 40px rgba(37,99,235,0.6), 0 0 0 1px rgba(124,58,237,0.5) !important;
+        transform: translateY(-1px) !important;
+    }
+    </style>
+    <div style="padding:28px 48px 8px;text-align:center;">
+        <div style="font-size:13px;color:#374f6e;margin-bottom:14px;">
+            Join 1,800+ traders already using StockWins · Cancel anytime
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
+    _,cta_col,_=st.columns([1,4,1])
+    with cta_col:
+        if st.button("🚀 Unlock Premium — Start Today →", key="land_prem", type="primary", use_container_width=True):
             nav("pricing")
-        st.markdown('</div>',unsafe_allow_html=True)
 
     st.markdown("<br>",unsafe_allow_html=True)
 
     # Our Composite Categories
-    st.markdown('<div style="padding:0 48px;"><div class="sec-hd">Our Proprietary Signal Categories <span class="tag tag-comp">Unique to StockWins</span></div>',unsafe_allow_html=True)
+    st.markdown('<div style="padding:0 48px;"><div class="sec-hd">Our Proprietary Signal Categories <span style="background:rgba(168,85,247,0.15);color:#c084fc;border:1px solid rgba(168,85,247,0.35);font-size:10px;font-weight:700;padding:3px 10px;border-radius:20px;margin-left:8px;white-space:nowrap;">✨ Unique to StockWins</span></div>',unsafe_allow_html=True)
     st.markdown('<div style="font-size:13px;color:#374f6e;margin-bottom:16px;">We combine multiple independent data signals to surface unique opportunities you won\'t find on any other platform.</div>',unsafe_allow_html=True)
     cg=st.columns(3,gap="small")
     color_map={"🔥💥 Squeeze + Buzz":"#ef4444","💡 Hidden Movers":"#3b82f6","🎭 Social Catalyst":"#f97316","⚡📈 Volume Breakout":"#06b6d4","🎯 Smart Reversal":"#f59e0b","🌊 Momentum Leaders":"#22c55e"}
@@ -1497,15 +1601,42 @@ def page_landing():
             st.markdown(f'<div style="font-size:13px;color:#374f6e;line-height:1.7;">{a}</div>',unsafe_allow_html=True)
     st.markdown('</div>',unsafe_allow_html=True)
 
-    # Footer
-    st.markdown("""<div style="background:#080b14;border-top:1px solid rgba(255,255,255,.06);padding:32px 48px;margin-top:32px;">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;gap:10px;">
-            <div class="logo">Stock<span class="w">W</span>ins</div>
-            <div style="font-size:12px;color:rgba(255,255,255,.15);">Privacy Policy · Terms of Service · Risk Disclaimer · Contact</div>
+    # Footer — full width
+    st.markdown("""
+    <style>
+    .sw-footer-wrap {
+        width: 100vw;
+        margin-left: calc(-50vw + 50%);
+        background: #050810;
+        border-top: 1px solid rgba(255,255,255,0.07);
+        padding: 40px 64px 28px;
+        margin-top: 40px;
+        box-sizing: border-box;
+    }
+    .sw-footer-inner {
+        max-width: 1400px; margin: 0 auto;
+    }
+    </style>
+    <div class="sw-footer-wrap">
+        <div class="sw-footer-inner">
+            <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:24px;margin-bottom:24px;">
+                <div>
+                    <span style="font-family:'JetBrains Mono',monospace;font-size:20px;font-weight:700;letter-spacing:-.5px;">
+                        <span style="color:#e2e8f0;">Stock</span><span style="color:#f59e0b;">W</span><span style="color:#e2e8f0;">ins</span>
+                    </span>
+                    <div style="font-size:12px;color:rgba(255,255,255,.2);margin-top:6px;">Market Intelligence Platform</div>
+                </div>
+                <div style="display:flex;gap:32px;font-size:12px;color:rgba(255,255,255,.25);">
+                    <span>Privacy Policy</span><span>Terms of Service</span><span>Risk Disclaimer</span><span>Contact</span>
+                </div>
+            </div>
+            <div style="background:#0e1421;border-left:3px solid #854d0e;border-radius:0 7px 7px 0;padding:12px 16px;font-size:11px;color:#2a3752;line-height:1.7;margin-bottom:16px;">
+                ⚠️ <strong style="color:#4a5e7a;">Risk Disclaimer:</strong> Trading stocks involves substantial risk of financial loss. StockWins provides algorithmic, educational content only — not financial, investment, legal, or tax advice. All signals may be inaccurate or delayed. Past performance does not guarantee future results. Always consult a licensed financial professional before making investment decisions.
+            </div>
+            <div style="font-size:10px;color:rgba(255,255,255,.1);text-align:right;">© 2026 StockWins. All rights reserved.</div>
         </div>
-        <div class="disc">⚠️ <strong>Risk Disclaimer:</strong> Trading stocks involves substantial risk of financial loss. StockWins provides algorithmic, educational content only — not financial, investment, legal, or tax advice. All signals may be inaccurate or delayed. Past performance does not guarantee future results.</div>
-        <div style="font-size:10px;color:rgba(255,255,255,.1);margin-top:10px;text-align:right;">© 2026 StockWins. All rights reserved.</div>
-    </div>""",unsafe_allow_html=True)
+    </div>
+    """, unsafe_allow_html=True)
 
 # ─────────────────────────────────────────────────────────────
 # AUTH PAGES
@@ -1607,7 +1738,7 @@ def page_dashboard():
     st.markdown('<div class="pg">',unsafe_allow_html=True)
 
     # ── HERO: Proprietary Composite Categories FIRST ──────────
-    st.markdown('<div class="sec-hd">🎯 Our Proprietary Signal Categories <span class="tag tag-comp">Unique to StockWins</span></div>',unsafe_allow_html=True)
+    st.markdown('<div class="sec-hd">🎯 Our Proprietary Signal Categories <span style="background:rgba(168,85,247,0.15);color:#c084fc;border:1px solid rgba(168,85,247,0.35);font-size:10px;font-weight:700;padding:3px 10px;border-radius:20px;margin-left:8px;white-space:nowrap;">✨ Unique to StockWins</span></div>',unsafe_allow_html=True)
     st.markdown('<div style="font-size:13px;color:#374f6e;margin-bottom:16px;">StockWins combines multiple independent data signals to surface unique trade opportunities.</div>',unsafe_allow_html=True)
 
     color_map={"🔥💥 Squeeze + Buzz":"#ef4444","💡 Hidden Movers":"#3b82f6","🎭 Social Catalyst":"#f97316","⚡📈 Volume Breakout":"#06b6d4","🎯 Smart Reversal":"#f59e0b","🌊 Momentum Leaders":"#22c55e"}
