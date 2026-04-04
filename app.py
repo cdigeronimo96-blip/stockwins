@@ -1006,27 +1006,34 @@ def render_sidebar():
 # ─────────────────────────────────────────────────────────────
 NAV_CSS = """
 <style>
-/* ── Home nav button — hidden under the logo, click area ── */
-button[aria-label="⌂ home"] {
+/* ── Logo: markdown text is the visual, button is invisible overlay ── */
+.sw-logo-click-target {
+    display: inline-block;
+    padding: 6px 0 4px 0;
+    line-height: 1;
+    cursor: pointer;
+}
+/* Collapse the button's container height to zero, overflow visible */
+.element-container:has(.sw-logo-click-target) + .element-container {
+    height: 0px !important;
+    overflow: visible !important;
+    margin: 0 !important;
+    padding: 0 !important;
+}
+/* Shift button UP to sit over the logo text */
+.element-container:has(.sw-logo-click-target) + .element-container .stButton > button {
+    position: relative !important;
+    top: -48px !important;
+    left: 0 !important;
+    width: 180px !important;
+    height: 48px !important;
+    min-height: 48px !important;
+    opacity: 0 !important;
+    cursor: pointer !important;
+    z-index: 999 !important;
     background: transparent !important;
     border: none !important;
     box-shadow: none !important;
-    color: transparent !important;
-    font-size: 11px !important;
-    padding: 0 !important;
-    min-height: 16px !important;
-    height: 16px !important;
-    width: 120px !important;
-    margin-top: -4px !important;
-    cursor: pointer !important;
-    opacity: 0.01 !important;
-}
-button[aria-label="⌂ home"]:hover {
-    opacity: 1 !important;
-    color: #4a5e7a !important;
-    background: transparent !important;
-    border: none !important;
-    font-size: 11px !important;
 }
 /* ── Nav link buttons — subtle, consistent height ── */
 .sw-nav .stButton > button {
@@ -1094,14 +1101,14 @@ def render_topbar(active=""):
 
         with logo_col:
             st.markdown("""
-            <div style="padding:4px 0 0 0;line-height:1;">
+            <div class="sw-logo-click-target">
                 <span style="font-family:'JetBrains Mono',monospace;font-size:22px;font-weight:700;
-                             letter-spacing:-0.5px;user-select:none;">
+                             letter-spacing:-0.5px;">
                     <span style="color:#e2e8f0;">Stock</span><span style="color:#f59e0b;">W</span><span style="color:#e2e8f0;">ins</span>
                 </span>
             </div>
             """, unsafe_allow_html=True)
-            if st.button("⌂ home", key="top_logo_click", help="Go to dashboard"):
+            if st.button(" ", key="top_logo_click"):
                 nav("dashboard")
 
         with nav_col:
@@ -1139,14 +1146,14 @@ def render_topbar(active=""):
 
         with logo_col:
             st.markdown("""
-            <div style="padding:4px 0 0 0;line-height:1;">
+            <div class="sw-logo-click-target">
                 <span style="font-family:'JetBrains Mono',monospace;font-size:22px;font-weight:700;
-                             letter-spacing:-0.5px;user-select:none;">
+                             letter-spacing:-0.5px;">
                     <span style="color:#e2e8f0;">Stock</span><span style="color:#f59e0b;">W</span><span style="color:#e2e8f0;">ins</span>
                 </span>
             </div>
             """, unsafe_allow_html=True)
-            if st.button("⌂ home", key="top_logo_click", help="Go to home"):
+            if st.button(" ", key="top_logo_click"):
                 nav("landing")
 
         with auth_col:
@@ -1265,15 +1272,14 @@ def page_landing():
     logo_col, _, auth_col = st.columns([2, 5, 4])
     with logo_col:
         st.markdown("""
-        <div style="padding:4px 0 0 0;line-height:1;">
+        <div class="sw-logo-click-target">
             <span style="font-family:'JetBrains Mono',monospace;font-size:22px;font-weight:700;
-                         letter-spacing:-0.5px;user-select:none;">
+                         letter-spacing:-0.5px;">
                 <span style="color:#e2e8f0;">Stock</span><span style="color:#f59e0b;">W</span><span style="color:#e2e8f0;">ins</span>
             </span>
         </div>
         """, unsafe_allow_html=True)
-        # Small subtle home indicator — hidden visually but clickable
-        if st.button("⌂ home", key="top_logo_click", help="Home"):
+        if st.button(" ", key="top_logo_click"):
             nav("landing")
     with auth_col:
         st.markdown('<div class="sw-nav">', unsafe_allow_html=True)
