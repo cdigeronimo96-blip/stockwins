@@ -1002,68 +1002,186 @@ def render_sidebar():
         st.markdown('<div style="padding:8px 18px;font-size:10px;color:rgba(255,255,255,.1);">© 2026 StockWins</div>', unsafe_allow_html=True)
 
 # ─────────────────────────────────────────────────────────────
-# NAV BAR
+# NAV BAR — sticky, large, consistent on every page
 # ─────────────────────────────────────────────────────────────
 def render_topbar(active=""):
-    st.markdown('<div style="background:#080b14;border-bottom:1px solid rgba(255,255,255,.06);padding:0 24px;min-height:52px;display:flex;align-items:center;">', unsafe_allow_html=True)
-    c1,c2,c3=st.columns([2,8,3])
+    # Inject sticky navbar CSS once
+    st.markdown("""
+    <style>
+    /* ── Sticky topbar wrapper ── */
+    .sw-topbar-wrap {
+        position: sticky;
+        top: 0;
+        z-index: 999;
+        background: #080b14;
+        border-bottom: 1px solid rgba(255,255,255,0.07);
+        padding: 0 28px;
+        display: flex;
+        align-items: center;
+        min-height: 64px;
+        margin-bottom: 0;
+    }
+    /* Sticky: keep topbar fixed at top when page scrolls */
+    section[data-testid="stMain"] > div {
+        overflow-y: auto;
+    }
+    /* ── Topbar nav button sizing ── */
+    .sw-nav-btn .stButton > button {
+        font-size: 14px !important;
+        font-weight: 500 !important;
+        padding: 8px 16px !important;
+        min-height: 40px !important;
+        border: 1px solid rgba(255,255,255,0.15) !important;
+        background: rgba(255,255,255,0.04) !important;
+        color: #b0c4d8 !important;
+        border-radius: 7px !important;
+        white-space: nowrap !important;
+    }
+    .sw-nav-btn .stButton > button:hover {
+        border-color: rgba(37,99,235,0.5) !important;
+        background: rgba(37,99,235,0.1) !important;
+        color: #93b4fd !important;
+    }
+    .sw-nav-btn .stButton > button[kind="primary"] {
+        background: #2563eb !important;
+        border-color: #2563eb !important;
+        color: #fff !important;
+        font-weight: 700 !important;
+    }
+    .sw-nav-btn .stButton > button[kind="primary"]:hover {
+        background: #1d4ed8 !important;
+    }
+    /* ── Logo ghost button — invisible, sits over logo text ── */
+    .sw-logo-wrap {
+        position: relative;
+        display: inline-flex;
+        align-items: center;
+        height: 48px;
+        cursor: pointer;
+    }
+    .sw-logo-wrap .stButton {
+        position: absolute !important;
+        top: 0 !important; left: 0 !important;
+        width: 140px !important;
+        height: 48px !important;
+        z-index: 5 !important;
+    }
+    .sw-logo-wrap .stButton > button {
+        opacity: 0 !important;
+        background: transparent !important;
+        border: none !important;
+        width: 140px !important;
+        height: 48px !important;
+        min-height: 48px !important;
+        cursor: pointer !important;
+        position: absolute !important;
+        top: 0 !important; left: 0 !important;
+    }
+    /* Topbar divider spacing */
+    .sw-topbar-divider {
+        border: none;
+        border-top: 1px solid rgba(255,255,255,0.06);
+        margin: 0 0 20px 0;
+    }
+    </style>
+    """, unsafe_allow_html=True)
+
+    # ── Logo ──
+    logo_html = """
+    <div class="sw-topbar-wrap">
+        <div class="sw-logo-wrap" style="margin-right:32px;flex-shrink:0;">
+            <span style="font-family:'JetBrains Mono',monospace;font-size:19px;font-weight:700;
+                         color:#e2e8f0;letter-spacing:-0.5px;pointer-events:none;user-select:none;
+                         position:relative;z-index:1;">
+                Stock<span style="color:#f59e0b;">W</span>ins
+            </span>
+        </div>
+    </div>
+    """
+
+    # Use a 3-column layout inside the sticky bar
+    # Column ratios: logo | nav links | user controls
+    c1, c2, c3 = st.columns([2, 8, 3])
+
     with c1:
-        # Logo rendered as styled HTML — matches landing page exactly (orange W, JetBrains Mono)
-        # Transparent ghost button sits on top, handles click navigation
+        # Styled logo text + invisible button layered on top
         st.markdown("""
-        <div style="position:relative;display:inline-block;height:36px;line-height:36px;user-select:none;">
-            <span style="font-family:'JetBrains Mono',monospace;font-size:17px;font-weight:700;
-                         color:#e2e8f0;letter-spacing:-0.5px;pointer-events:none;">
+        <div style="display:flex;align-items:center;height:64px;padding-left:4px;">
+            <span style="font-family:'JetBrains Mono',monospace;font-size:19px;font-weight:700;
+                         color:#e2e8f0;letter-spacing:-0.5px;user-select:none;">
                 Stock<span style="color:#f59e0b;">W</span>ins
             </span>
         </div>
         <style>
-        /* Pull the ghost button up to sit over the logo markdown */
-        div[data-testid="stHorizontalBlock"] > div:first-child .stButton {
-            margin-top: -44px !important;
-            position: relative !important;
-            z-index: 10 !important;
-        }
-        div[data-testid="stHorizontalBlock"] > div:first-child .stButton > button {
+        /* Ghost button over logo — scoped to top_logo_click only */
+        button[data-testid="baseButton-secondary"][aria-label="logo"],
+        [data-key="top_logo_click"] {
+            position: absolute !important;
+            top: 0 !important;
+            left: 0 !important;
+            width: 150px !important;
+            height: 64px !important;
+            min-height: 64px !important;
+            opacity: 0 !important;
             background: transparent !important;
             border: none !important;
-            box-shadow: none !important;
-            opacity: 0 !important;
             cursor: pointer !important;
-            height: 36px !important;
-            min-height: 36px !important;
-            width: 120px !important;
+            z-index: 20 !important;
+        }
+        /* Parent wrapper negative margin to pull button up over logo */
+        .stButton:has(button[data-key="top_logo_click"]) {
+            margin-top: -64px !important;
+            height: 0 !important;
+            overflow: visible !important;
         }
         </style>
         """, unsafe_allow_html=True)
-        if st.button("logo", key="top_logo_click", use_container_width=False):
+        if st.button("logo", key="top_logo_click"):
             nav("landing" if not is_authed() else "dashboard")
+
     with c2:
         if is_authed():
-            pages=[("Dashboard","dashboard"),("Discover","discover"),("Watchlist","watchlist"),("Screener","screener"),("BI Analytics","bi_dashboard"),("Pricing","pricing")]
+            pages = [("Dashboard","dashboard"),("Discover","discover"),("Watchlist","watchlist"),
+                     ("Screener","screener"),("BI Analytics","bi_dashboard"),("Pricing","pricing")]
             if is_admin(): pages.append(("🛠 Admin","admin"))
-            nc=st.columns(len(pages))
-            for col,(lbl,pg) in zip(nc,pages):
+            nc = st.columns(len(pages))
+            for col, (lbl, pg) in zip(nc, pages):
                 with col:
-                    if st.button(lbl, key=f"top_{pg}", type="primary" if active==pg else "secondary"):
+                    if st.button(lbl, key=f"top_{pg}",
+                                 type="primary" if active == pg else "secondary"):
                         nav(pg)
+        else:
+            # Not logged in — show nav links
+            nc1, nc2, nc3, _ = st.columns([2, 2, 2, 2])
+            with nc1:
+                if st.button("Features", key="top_features"): pass
+            with nc2:
+                if st.button("Pricing", key="top_pricing_nav"): nav("pricing")
+            with nc3:
+                if st.button("← Home", key="top_home_guest"): nav("landing")
+
     with c3:
         if is_authed():
-            cc1,cc2,cc3=st.columns([4,1,1])
-            ri={"owner":"👑","admin":"🛡️","premium":"⭐","free":"👤"}.get(st.session_state.role,"👤")
-            with cc1: st.markdown(f'<div style="font-size:12px;color:#374f6e;padding-top:9px;white-space:nowrap;">{ri} {st.session_state.user["name"]}</div>',unsafe_allow_html=True)
+            cc1, cc2, cc3 = st.columns([4, 1, 1])
+            ri = {"owner":"👑","admin":"🛡️","premium":"⭐","free":"👤"}.get(st.session_state.role,"👤")
+            with cc1:
+                st.markdown(
+                    f'<div style="font-size:13px;color:#6b7fa0;height:64px;display:flex;'
+                    f'align-items:center;white-space:nowrap;">{ri} {st.session_state.user["name"]}</div>',
+                    unsafe_allow_html=True)
             with cc2:
-                if st.button("⚙️",key="top_set"): nav("settings")
+                if st.button("⚙️", key="top_set"): nav("settings")
             with cc3:
-                if st.button("↩️",key="top_out"): logout()
+                if st.button("↩️", key="top_out"): logout()
         else:
-            lc1,lc2=st.columns(2)
+            lc1, lc2 = st.columns(2)
             with lc1:
-                if st.button("Login",key="top_login"): nav("login")
+                if st.button("Login", key="top_login"): nav("login")
             with lc2:
-                if st.button("Sign Up",key="top_signup",type="primary"): nav("signup")
-    st.markdown('</div>', unsafe_allow_html=True)
-    st.divider()
+                if st.button("Sign Up", key="top_signup", type="primary"): nav("signup")
+
+    # Clean divider below navbar
+    st.markdown('<hr class="sw-topbar-divider">', unsafe_allow_html=True)
 
 # ─────────────────────────────────────────────────────────────
 # HERO DEMO PANELS
@@ -1165,10 +1283,17 @@ DEMO = [
 # PAGE: LANDING
 # ─────────────────────────────────────────────────────────────
 def page_landing():
-    # Minimal topbar — clean, evenly spaced
+    # Landing topbar — same height and style as render_topbar
     tc1, tc2 = st.columns([3, 4])
     with tc1:
-        st.markdown('<div style="padding:10px 0 0 24px;"><span class="logo">Stock<span class="w">W</span>ins</span></div>', unsafe_allow_html=True)
+        st.markdown("""
+        <div style="display:flex;align-items:center;height:64px;padding-left:4px;">
+            <span style="font-family:'JetBrains Mono',monospace;font-size:19px;font-weight:700;
+                         color:#e2e8f0;letter-spacing:-0.5px;user-select:none;">
+                Stock<span style="color:#f59e0b;">W</span>ins
+            </span>
+        </div>
+        """, unsafe_allow_html=True)
     with tc2:
         lc1, lc2, lc3, lc4 = st.columns([2, 2, 2, 3])
         with lc1:
@@ -1179,7 +1304,7 @@ def page_landing():
             if st.button("Login",    key="land_login", use_container_width=True): nav("login")
         with lc4:
             if st.button("Start Free →", key="land_su", type="primary", use_container_width=True): nav("signup")
-    st.divider()
+    st.markdown('<hr class="sw-topbar-divider">', unsafe_allow_html=True)
 
     # Hero
     hl,hr=st.columns([5,5],gap="large")
