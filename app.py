@@ -1006,39 +1006,27 @@ def render_sidebar():
 # ─────────────────────────────────────────────────────────────
 NAV_CSS = """
 <style>
-/* ── Logo button styled as plain text — no box, orange W ── */
-button[aria-label="StockWins"] {
-    background: linear-gradient(90deg,
-        #e2e8f0 0%,    #e2e8f0 54%,
-        #f59e0b 54%,   #f59e0b 65%,
-        #e2e8f0 65%,   #e2e8f0 100%
-    ) !important;
-    -webkit-background-clip: text !important;
-    -webkit-text-fill-color: transparent !important;
-    background-clip: text !important;
+/* ── Home nav button — hidden under the logo, click area ── */
+button[aria-label="⌂ home"] {
+    background: transparent !important;
     border: none !important;
     box-shadow: none !important;
-    font-family: 'JetBrains Mono', monospace !important;
-    font-size: 22px !important;
-    font-weight: 700 !important;
-    letter-spacing: -0.5px !important;
-    padding: 4px 0 !important;
-    min-height: 48px !important;
-    width: auto !important;
-    justify-content: flex-start !important;
-    outline: none !important;
+    color: transparent !important;
+    font-size: 11px !important;
+    padding: 0 !important;
+    min-height: 16px !important;
+    height: 16px !important;
+    width: 120px !important;
+    margin-top: -4px !important;
     cursor: pointer !important;
+    opacity: 0.01 !important;
 }
-button[aria-label="StockWins"]:hover {
-    background: linear-gradient(90deg,
-        #cbd5e1 0%,    #cbd5e1 54%,
-        #fbbf24 54%,   #fbbf24 65%,
-        #cbd5e1 65%,   #cbd5e1 100%
-    ) !important;
-    -webkit-background-clip: text !important;
-    -webkit-text-fill-color: transparent !important;
-    background-clip: text !important;
+button[aria-label="⌂ home"]:hover {
+    opacity: 1 !important;
+    color: #4a5e7a !important;
+    background: transparent !important;
     border: none !important;
+    font-size: 11px !important;
 }
 /* ── Nav link buttons — subtle, consistent height ── */
 .sw-nav .stButton > button {
@@ -1105,7 +1093,15 @@ def render_topbar(active=""):
         logo_col, nav_col, user_col = st.columns([2, 8, 3])
 
         with logo_col:
-            if st.button("StockWins", key="top_logo_click"):
+            st.markdown("""
+            <div style="padding:4px 0 0 0;line-height:1;">
+                <span style="font-family:'JetBrains Mono',monospace;font-size:22px;font-weight:700;
+                             letter-spacing:-0.5px;user-select:none;">
+                    <span style="color:#e2e8f0;">Stock</span><span style="color:#f59e0b;">W</span><span style="color:#e2e8f0;">ins</span>
+                </span>
+            </div>
+            """, unsafe_allow_html=True)
+            if st.button("⌂ home", key="top_logo_click", help="Go to dashboard"):
                 nav("dashboard")
 
         with nav_col:
@@ -1142,7 +1138,15 @@ def render_topbar(active=""):
         logo_col, _, auth_col = st.columns([2, 6, 3])
 
         with logo_col:
-            if st.button("StockWins", key="top_logo_click"):
+            st.markdown("""
+            <div style="padding:4px 0 0 0;line-height:1;">
+                <span style="font-family:'JetBrains Mono',monospace;font-size:22px;font-weight:700;
+                             letter-spacing:-0.5px;user-select:none;">
+                    <span style="color:#e2e8f0;">Stock</span><span style="color:#f59e0b;">W</span><span style="color:#e2e8f0;">ins</span>
+                </span>
+            </div>
+            """, unsafe_allow_html=True)
+            if st.button("⌂ home", key="top_logo_click", help="Go to home"):
                 nav("landing")
 
         with auth_col:
@@ -1260,7 +1264,16 @@ def page_landing():
     st.markdown(NAV_CSS, unsafe_allow_html=True)
     logo_col, _, auth_col = st.columns([2, 5, 4])
     with logo_col:
-        if st.button("StockWins", key="top_logo_click"):
+        st.markdown("""
+        <div style="padding:4px 0 0 0;line-height:1;">
+            <span style="font-family:'JetBrains Mono',monospace;font-size:22px;font-weight:700;
+                         letter-spacing:-0.5px;user-select:none;">
+                <span style="color:#e2e8f0;">Stock</span><span style="color:#f59e0b;">W</span><span style="color:#e2e8f0;">ins</span>
+            </span>
+        </div>
+        """, unsafe_allow_html=True)
+        # Small subtle home indicator — hidden visually but clickable
+        if st.button("⌂ home", key="top_logo_click", help="Home"):
             nav("landing")
     with auth_col:
         st.markdown('<div class="sw-nav">', unsafe_allow_html=True)
