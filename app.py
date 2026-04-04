@@ -1008,10 +1008,12 @@ NAV_CSS = """
 <style>
 /* ── Logo: markdown text is the visual, button is invisible overlay ── */
 .sw-logo-click-target {
-    display: inline-block;
-    padding: 6px 0 4px 0;
-    line-height: 1;
+    display: flex;
+    align-items: center;
+    height: 38px;
     cursor: pointer;
+    padding: 0;
+    line-height: 1;
 }
 /* Collapse the button's container height to zero, overflow visible */
 .element-container:has(.sw-logo-click-target) + .element-container {
@@ -1023,11 +1025,11 @@ NAV_CSS = """
 /* Shift button UP to sit over the logo text */
 .element-container:has(.sw-logo-click-target) + .element-container .stButton > button {
     position: relative !important;
-    top: -48px !important;
+    top: -44px !important;
     left: 0 !important;
-    width: 180px !important;
-    height: 48px !important;
-    min-height: 48px !important;
+    width: 200px !important;
+    height: 44px !important;
+    min-height: 44px !important;
     opacity: 0 !important;
     cursor: pointer !important;
     z-index: 999 !important;
@@ -1102,7 +1104,7 @@ def render_topbar(active=""):
         with logo_col:
             st.markdown("""
             <div class="sw-logo-click-target">
-                <span style="font-family:'JetBrains Mono',monospace;font-size:22px;font-weight:700;
+                <span style="font-family:'JetBrains Mono',monospace;font-size:26px;font-weight:700;
                              letter-spacing:-0.5px;">
                     <span style="color:#e2e8f0;">Stock</span><span style="color:#f59e0b;">W</span><span style="color:#e2e8f0;">ins</span>
                 </span>
@@ -1147,7 +1149,7 @@ def render_topbar(active=""):
         with logo_col:
             st.markdown("""
             <div class="sw-logo-click-target">
-                <span style="font-family:'JetBrains Mono',monospace;font-size:22px;font-weight:700;
+                <span style="font-family:'JetBrains Mono',monospace;font-size:26px;font-weight:700;
                              letter-spacing:-0.5px;">
                     <span style="color:#e2e8f0;">Stock</span><span style="color:#f59e0b;">W</span><span style="color:#e2e8f0;">ins</span>
                 </span>
@@ -1273,7 +1275,7 @@ def page_landing():
     with logo_col:
         st.markdown("""
         <div class="sw-logo-click-target">
-            <span style="font-family:'JetBrains Mono',monospace;font-size:22px;font-weight:700;
+            <span style="font-family:'JetBrains Mono',monospace;font-size:26px;font-weight:700;
                          letter-spacing:-0.5px;">
                 <span style="color:#e2e8f0;">Stock</span><span style="color:#f59e0b;">W</span><span style="color:#e2e8f0;">ins</span>
             </span>
