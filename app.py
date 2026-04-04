@@ -359,39 +359,6 @@ hr { border-color: rgba(255,255,255,0.06) !important; margin: 0 !important; }
 .hm-lo { background:#200404; color:#f87171; border-radius:5px; padding:7px 4px; text-align:center; font-size:11px; font-weight:700; }
 .hm-nu { background:#101827; color:#4a5e7a; border-radius:5px; padding:7px 4px; text-align:center; font-size:11px; font-weight:700; }
 
-/* ── Logo button — looks identical to plain text logo ── */
-button[data-testid="baseButton-secondary"][kind="secondary"]:is([data-key="top_logo_click"]),
-.stButton:has(button[data-key="top_logo_click"]) > button {
-    background: transparent !important;
-    border: none !important;
-    box-shadow: none !important;
-    color: #e2e8f0 !important;
-    font-family: 'JetBrains Mono', monospace !important;
-    font-size: 17px !important;
-    font-weight: 700 !important;
-    letter-spacing: -0.5px !important;
-    padding: 4px 0 !important;
-    min-height: unset !important;
-    height: auto !important;
-    width: auto !important;
-    justify-content: flex-start !important;
-    outline: none !important;
-}
-.stButton:has(button[data-key="top_logo_click"]) > button:hover {
-    background: transparent !important;
-    border: none !important;
-    color: #f59e0b !important;
-}
-/* Highlight the W in StockWins logo button */
-.stButton:has(button[data-key="top_logo_click"]) > button::first-letter {
-    color: #e2e8f0;
-}
-
-/* Topbar home button wrapper — remove extra spacing/box */
-.stButton:has(button[data-key="top_logo_click"]) {
-    margin: 0 !important;
-    padding: 0 !important;
-}
 
 /* Page padding */
 .pg { padding:20px 28px 40px; }
@@ -459,30 +426,6 @@ button[data-testid="baseButton-secondary"][kind="secondary"]:is([data-key="top_l
     color: #93b4fd !important;
 }
 
-/* ── Logo button — pure text, zero box ── */
-.stButton:has(button[data-key="top_logo_click"]) > button {
-    background: transparent !important;
-    border: none !important;
-    box-shadow: none !important;
-    color: #e2e8f0 !important;
-    font-family: 'JetBrains Mono', monospace !important;
-    font-size: 17px !important;
-    font-weight: 700 !important;
-    letter-spacing: -0.5px !important;
-    padding: 2px 0 !important;
-    min-height: unset !important;
-    height: auto !important;
-    width: auto !important;
-    justify-content: flex-start !important;
-}
-.stButton:has(button[data-key="top_logo_click"]) > button:hover {
-    background: transparent !important;
-    border: none !important;
-    color: #f59e0b !important;
-}
-.stButton:has(button[data-key="top_logo_click"]) {
-    margin: 0 !important; padding: 0 !important;
-}
 
 /* ── Form submit clipping fix ── */
 [data-testid="InputInstructions"] { display: none !important; }
@@ -1065,7 +1008,35 @@ def render_topbar(active=""):
     st.markdown('<div style="background:#080b14;border-bottom:1px solid rgba(255,255,255,.06);padding:0 24px;min-height:52px;display:flex;align-items:center;">', unsafe_allow_html=True)
     c1,c2,c3=st.columns([2,8,3])
     with c1:
-        if st.button("StockWins", key="top_logo_click"):
+        # Logo rendered as styled HTML — matches landing page exactly (orange W, JetBrains Mono)
+        # Transparent ghost button sits on top, handles click navigation
+        st.markdown("""
+        <div style="position:relative;display:inline-block;height:36px;line-height:36px;user-select:none;">
+            <span style="font-family:'JetBrains Mono',monospace;font-size:17px;font-weight:700;
+                         color:#e2e8f0;letter-spacing:-0.5px;pointer-events:none;">
+                Stock<span style="color:#f59e0b;">W</span>ins
+            </span>
+        </div>
+        <style>
+        /* Pull the ghost button up to sit over the logo markdown */
+        div[data-testid="stHorizontalBlock"] > div:first-child .stButton {
+            margin-top: -44px !important;
+            position: relative !important;
+            z-index: 10 !important;
+        }
+        div[data-testid="stHorizontalBlock"] > div:first-child .stButton > button {
+            background: transparent !important;
+            border: none !important;
+            box-shadow: none !important;
+            opacity: 0 !important;
+            cursor: pointer !important;
+            height: 36px !important;
+            min-height: 36px !important;
+            width: 120px !important;
+        }
+        </style>
+        """, unsafe_allow_html=True)
+        if st.button("logo", key="top_logo_click", use_container_width=False):
             nav("landing" if not is_authed() else "dashboard")
     with c2:
         if is_authed():
@@ -1267,44 +1238,92 @@ def page_landing():
     </div>""",unsafe_allow_html=True)
     st.markdown("<br>",unsafe_allow_html=True)
 
-    # Section: Find Trending + Squeeze (matching image 2 layout)
-    s1,s2=st.columns(2,gap="large")
-    with s1:
-        st.markdown("""<div style="padding:0 0 0 48px;">
-            <div style="font-size:28px;font-weight:900;color:#f1f5f9;letter-spacing:-1px;margin-bottom:8px;">Find Trending Stocks<br><span style="color:#2563eb;">Before the Crowd</span></div>
-            <div style="font-size:13px;color:#374f6e;margin-bottom:20px;line-height:1.7;">Discover top stocks making waves across social media and the market in one smart dashboard.</div>
-        </div>""",unsafe_allow_html=True)
-        st.markdown(f'<div style="padding:0 0 0 48px;">{DEMO[0]}</div>',unsafe_allow_html=True)
-    with s2:
-        st.markdown("""<div style="padding:0 48px 0 0;">
-            <div style="font-size:28px;font-weight:900;color:#f1f5f9;letter-spacing:-1px;margin-bottom:8px;">Scan For Short Squeeze<br><span style="color:#2563eb;">Candidates</span></div>
-            <div style="font-size:13px;color:#374f6e;margin-bottom:20px;line-height:1.7;">Spot stocks with heavy short interest and growing momentum before the move.</div>
-        </div>""",unsafe_allow_html=True)
-        st.markdown(f'<div style="padding:0 48px 0 0;">{DEMO[1]}</div>',unsafe_allow_html=True)
+    # ── 4-panel feature section — equal height, pixel-perfect alignment ──
+    demo0 = DEMO[0].replace('\n','').replace('"','\\"').replace("'","\\'")
+    demo1 = DEMO[1].replace('\n','').replace('"','\\"').replace("'","\\'")
+    demo2 = DEMO[2].replace('\n','').replace('"','\\"').replace("'","\\'")
 
-    st.markdown("<br>",unsafe_allow_html=True)
+    # Row 1: Find Trending | Squeeze Scanner
+    st.markdown(f"""
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:32px;padding:0 48px;align-items:start;margin-bottom:32px;">
 
-    # Section: Smart Insights + Go Premium
-    s3,s4=st.columns(2,gap="large")
-    with s3:
-        st.markdown("""<div style="padding:0 0 0 48px;">
-            <div style="font-size:28px;font-weight:900;color:#f1f5f9;letter-spacing:-1px;margin-bottom:8px;">Smart Insights<br>in Simple <span style="color:#2563eb;">Language</span></div>
-            <div style="font-size:13px;color:#374f6e;margin-bottom:20px;line-height:1.7;">Understand technical setups with plain-English explanations that actually make sense.</div>
-        </div>""",unsafe_allow_html=True)
-        st.markdown(f'<div style="padding:0 0 0 48px;">{DEMO[2]}</div>',unsafe_allow_html=True)
-    with s4:
-        st.markdown("""<div style="padding:0 48px 0 0;">
-            <div style="font-size:28px;font-weight:900;color:#f1f5f9;letter-spacing:-1px;margin-bottom:8px;">Go Premium For<br><span style="color:#f59e0b;">Real-Time Signals &<br>Deeper Analysis</span></div>
-            <div style="font-size:13px;color:#374f6e;margin-bottom:20px;line-height:1.7;">Upgrade to unlock advanced screening, unlimited alerts, and premium watchlists.</div>
-            <div style="background:#0e1421;border:1px solid rgba(255,255,255,.08);border-radius:11px;overflow:hidden;">
-                <div style="background:linear-gradient(135deg,#060f2a,#0e1421);border-bottom:1px solid rgba(255,255,255,.06);padding:12px 16px;text-align:center;font-size:12px;font-weight:700;color:#93b4fd;letter-spacing:1px;">Premium Features</div>
-                <div style="padding:16px;font-size:13px;color:#374f6e;line-height:2.3;">
-                    ✅ Advanced Stock Screeners<br>✅ Real-Time Alerts<br>✅ Unlimited Watchlists<br>✅ Enhanced Analysis<br>✅ Premium Signals<br>✅ Full Dashboard Access
-                </div>
-            </div>
-        </div>""",unsafe_allow_html=True)
-        st.markdown('<div style="padding:12px 48px 0 0;">',unsafe_allow_html=True)
-        if st.button("🚀 Go Premium →",key="land_prem",type="primary",use_container_width=True): nav("pricing")
+      <div style="display:flex;flex-direction:column;">
+        <div style="height:120px;display:flex;flex-direction:column;justify-content:flex-start;margin-bottom:20px;">
+          <div style="font-size:28px;font-weight:900;color:#f1f5f9;letter-spacing:-1px;line-height:1.15;margin-bottom:10px;">
+            Find Trending Stocks<br><span style="color:#2563eb;">Before the Crowd</span>
+          </div>
+          <div style="font-size:13px;color:#374f6e;line-height:1.7;">
+            Discover top stocks making waves across social media and the market.
+          </div>
+        </div>
+        {DEMO[0]}
+      </div>
+
+      <div style="display:flex;flex-direction:column;">
+        <div style="height:120px;display:flex;flex-direction:column;justify-content:flex-start;margin-bottom:20px;">
+          <div style="font-size:28px;font-weight:900;color:#f1f5f9;letter-spacing:-1px;line-height:1.15;margin-bottom:10px;">
+            Scan For Short Squeeze<br><span style="color:#2563eb;">Candidates</span>
+          </div>
+          <div style="font-size:13px;color:#374f6e;line-height:1.7;">
+            Spot stocks with heavy short interest and growing momentum.
+          </div>
+        </div>
+        {DEMO[1]}
+      </div>
+
+    </div>
+    """, unsafe_allow_html=True)
+
+    # Row 2: Smart Insights | Go Premium
+    st.markdown(f"""
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:32px;padding:0 48px;align-items:start;">
+
+      <div style="display:flex;flex-direction:column;">
+        <div style="height:120px;display:flex;flex-direction:column;justify-content:flex-start;margin-bottom:20px;">
+          <div style="font-size:28px;font-weight:900;color:#f1f5f9;letter-spacing:-1px;line-height:1.15;margin-bottom:10px;">
+            Smart Insights<br>in Simple <span style="color:#2563eb;">Language</span>
+          </div>
+          <div style="font-size:13px;color:#374f6e;line-height:1.7;">
+            Understand technical setups with plain-English explanations.
+          </div>
+        </div>
+        {DEMO[2]}
+      </div>
+
+      <div style="display:flex;flex-direction:column;">
+        <div style="height:120px;display:flex;flex-direction:column;justify-content:flex-start;margin-bottom:20px;">
+          <div style="font-size:28px;font-weight:900;color:#f1f5f9;letter-spacing:-1px;line-height:1.15;margin-bottom:10px;">
+            Go Premium For<br>
+            <span style="color:#f59e0b;">Real-Time Signals &amp;<br>Deeper Analysis</span>
+          </div>
+          <div style="font-size:13px;color:#374f6e;line-height:1.7;">
+            Upgrade to unlock advanced screening, unlimited alerts, and premium watchlists.
+          </div>
+        </div>
+        <div style="background:#0e1421;border:1px solid rgba(255,255,255,.08);border-radius:11px;overflow:hidden;flex:1;">
+          <div style="background:linear-gradient(135deg,#060f2a,#0e1421);border-bottom:1px solid rgba(255,255,255,.06);padding:12px 16px;text-align:center;font-size:12px;font-weight:700;color:#93b4fd;letter-spacing:1px;">
+            Premium Features
+          </div>
+          <div style="padding:18px 20px;font-size:13px;color:#374f6e;line-height:2.4;">
+            ✅ &nbsp;Advanced Stock Screeners<br>
+            ✅ &nbsp;Real-Time Alerts<br>
+            ✅ &nbsp;Unlimited Watchlists<br>
+            ✅ &nbsp;Enhanced Analysis &amp; BI Charts<br>
+            ✅ &nbsp;Premium Composite Signals<br>
+            ✅ &nbsp;Full Dashboard Access
+          </div>
+        </div>
+      </div>
+
+    </div>
+    """, unsafe_allow_html=True)
+
+    # Go Premium button (below row 2 right panel, right-aligned)
+    _,_,prem_col=st.columns([1,1,1])
+    with prem_col:
+        st.markdown('<div style="padding:10px 48px 0 0;">',unsafe_allow_html=True)
+        if st.button("🚀 Go Premium →", key="land_prem", type="primary", use_container_width=True):
+            nav("pricing")
         st.markdown('</div>',unsafe_allow_html=True)
 
     st.markdown("<br>",unsafe_allow_html=True)
