@@ -4,4 +4,4 @@ pandas
 ta
 yfinance
 plotly
-stripe
+stripe>=5.0.0,<7.0.0
