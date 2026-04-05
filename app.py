@@ -1069,7 +1069,7 @@ def render_topbar(active=""):
             nc=st.columns(len(pages))
             for col,(lbl,pg) in zip(nc,pages):
                 with col:
-                    if st.button(lbl,key=f"top_{pg}",type="primary" if active==pg else "secondary"):
+                    if st.button(lbl,key=f"top_{pg}",type="primary" if active==pg else "secondary",use_container_width=True):
                         nav(pg)
             st.markdown('</div>', unsafe_allow_html=True)
         with c3:
