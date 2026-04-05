@@ -2439,17 +2439,53 @@ def page_pricing():
         '    setTimeout(function(){t.style.display="none";},5000);'
         '    return;'
         '  }'
-        '  // Trigger Stripe checkout via URL param → Python reads it and creates session'
-        '  var url=new URL(window.parent.location.href);'
-        '  url.searchParams.set("checkout",p);'
-        '  window.parent.location.href=url.toString();'
+        '  // Submit a hidden form to navigate parent - works with Streamlit sandbox allow-forms'
+        '  var f=document.createElement("form");'
+        '  f.method="GET";f.target="_top";f.action="";'
+        '  var i=document.createElement("input");'
+        '  i.type="hidden";i.name="checkout";i.value=p;'
+        '  f.appendChild(i);document.body.appendChild(f);f.submit();'
         '}'
         '</script>'
     )
 
     components.html(pricing_html, height=660)
 
-    # ── Stripe status / fallback ──
+    # ── Real Streamlit checkout buttons — guaranteed to work regardless of iframe sandbox ──
+    if is_authed():
+        st.markdown(f"""<style>
+        button[aria-label="🚀 Subscribe — Premium $29/mo"]{{
+            background:linear-gradient(135deg,#1d4ed8,#2563eb) !important;
+            border-color:#2563eb !important;color:#fff !important;font-weight:700 !important;
+        }}
+        button[aria-label="🚀 Subscribe — Premium $29/mo"]:hover{{
+            background:linear-gradient(135deg,#1e40af,#1d4ed8) !important;
+        }}
+        </style>""", unsafe_allow_html=True)
+        cb1, cb2, cb3 = st.columns(3, gap="small")
+        with cb1:
+            if st.button("Get Started Free →", key="ck_free", use_container_width=True):
+                nav("dashboard")
+        with cb2:
+            if st.button("🚀 Subscribe — Premium $29/mo", key="ck_prem", type="primary", use_container_width=True):
+                with st.spinner("Creating secure checkout..."):
+                    url, err = create_checkout_session("premium", st.session_state.user["email"])
+                if url: st.session_state["_redirect_url"] = url; st.rerun()
+                else: st.error(f"Checkout error: {err}")
+        with cb3:
+            st.markdown('<div class="gold-btn">', unsafe_allow_html=True)
+            if st.button("👑 Subscribe — Annual $199/yr", key="ck_ann", use_container_width=True):
+                with st.spinner("Creating secure checkout..."):
+                    url, err = create_checkout_session("annual", st.session_state.user["email"])
+                if url: st.session_state["_redirect_url"] = url; st.rerun()
+                else: st.error(f"Checkout error: {err}")
+            st.markdown('</div>', unsafe_allow_html=True)
+    else:
+        _,lc,_ = st.columns([1,2,1])
+        with lc:
+            st.markdown(f'<div style="text-align:center;font-size:13px;color:#374f6e;margin-bottom:10px;">Create a free account to subscribe</div>',unsafe_allow_html=True)
+            if st.button("Create Account & Subscribe →", key="ck_signup", type="primary", use_container_width=True):
+                nav("signup")
     if stripe_configured():
         st.markdown(f"""<div style="text-align:center;margin-top:12px;">
             <span style="font-size:11px;color:#374f6e;">🔒 Secure payments by </span>
@@ -2778,18 +2814,26 @@ handle_payment_return()
 
 # ── 2. Execute Stripe redirect if checkout session was just created ──
 if st.session_state.get("_redirect_url"):
-    url = st.session_state.pop("_redirect_url")
-    import streamlit.components.v1 as _comp
-    # Full-page redirect to Stripe Checkout
-    _comp.html(f"""
-    <style>body{{background:#07090f;display:flex;align-items:center;justify-content:center;height:100vh;font-family:Inter,sans-serif;}}</style>
-    <div style="text-align:center;color:#6b7fa0;">
-        <div style="font-size:24px;margin-bottom:12px;">🔒</div>
-        <div style="font-size:14px;margin-bottom:8px;color:#e2e8f0;">Redirecting to secure checkout...</div>
-        <div style="font-size:12px;">Powered by Stripe</div>
-    </div>
-    <script>setTimeout(function(){{window.top.location.href="{url}";}},400);</script>
-    """, height=200)
+    url = st.session_state.get("_redirect_url")  # keep until user leaves
+    render_topbar()
+    _,cc,_ = st.columns([1,2,1])
+    with cc:
+        st.markdown(f"""
+        <div style="text-align:center;padding:60px 0 32px;">
+            <div style="font-size:40px;margin-bottom:16px;">🔒</div>
+            <div style="font-size:24px;font-weight:800;color:#e2e8f0;margin-bottom:8px;">Your checkout is ready</div>
+            <div style="font-size:14px;color:#374f6e;margin-bottom:32px;">
+                Secure payment powered by Stripe · SSL encrypted · Cancel anytime
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
+        st.link_button("🚀 Complete Checkout on Stripe →", url,
+                       type="primary", use_container_width=True)
+        st.markdown('<div style="text-align:center;margin-top:10px;font-size:11px;color:#2a3a52;">Opens Stripe\'s hosted checkout. Your card details never touch our servers.</div>',unsafe_allow_html=True)
+        st.markdown("<br>", unsafe_allow_html=True)
+        if st.button("← Back to Pricing", key="cancel_ck", use_container_width=True):
+            st.session_state.pop("_redirect_url", None)
+            nav("pricing")
     st.stop()
 
 # ── 3. Payment notifications ──
