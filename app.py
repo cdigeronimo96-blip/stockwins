@@ -565,7 +565,7 @@ def init():
         "page":"landing","user":None,"role":"guest",
         "watchlist":[],"alerts":[],"saved_screeners":[],
         "detail_ticker":None,"detail_data":{},"discover_cat":"🔥💥 Squeeze + Buzz",
-        "prev_page":None,"hero_panel":0,
+        "prev_page":None,"hero_panel":0,"_page_hist":[],
         "users_db":_load_seed_accounts(),
         "site_stats":{"total_signups":1847,"premium_users":312,"daily_active":634,"conversion":16.9},
         "email_digest_enabled":False,"digest_frequency":"Daily",
@@ -604,14 +604,25 @@ def is_premium(): return st.session_state.get("role") in ("owner","admin","premi
 def is_authed():  return st.session_state.get("user") is not None
 
 def nav(p):
-    st.session_state.prev_page=st.session_state.get("page")
-    st.session_state.page=p
+    cur = st.session_state.get("page")
+    if cur and cur != p:
+        hist = st.session_state.get("_page_hist", [])
+        hist.append(cur)
+        if len(hist) > 20: hist = hist[-20:]
+        st.session_state["_page_hist"] = hist
+    st.session_state.prev_page = cur
+    st.session_state.page = p
     st.rerun()
 
 def go_back():
-    prev=st.session_state.get("prev_page","discover")
-    if not prev or prev==st.session_state.page: prev="discover"
-    nav(prev)
+    hist = st.session_state.get("_page_hist", [])
+    if hist:
+        prev = hist.pop()
+        st.session_state["_page_hist"] = hist
+        st.session_state.page = prev
+        st.rerun()
+    else:
+        nav("discover" if is_authed() else "landing")
 
 # ─────────────────────────────────────────────────────────────
 # DATA
@@ -1086,7 +1097,7 @@ def render_topbar(active=""):
     st.markdown(NAV_CSS, unsafe_allow_html=True)
     if is_authed():
         pages=[("Dashboard","dashboard"),("Discover","discover"),("Watchlist","watchlist"),
-               ("Screener","screener"),("BI Analytics","bi_dashboard"),("Pricing","pricing")]
+               ("Screener","screener"),("BI Analytics","bi_dashboard"),("Pricing","pricing"),("Contact","contact")]
         if is_admin(): pages.append(("🛠 Admin","admin"))
         c1,c2,c3=st.columns([2,8,3])
         with c1: render_logo_click("top_logo","dashboard")
@@ -1111,14 +1122,16 @@ def render_topbar(active=""):
         with c1: render_logo_click("top_logo","landing")
         with c3:
             st.markdown('<div class="sw-nav">', unsafe_allow_html=True)
-            a1,a2,a3,a4=st.columns(4,gap="small")
+            a1,a2,a3,a4,a5=st.columns(5,gap="small")
             with a1:
                 if st.button("Features",key="top_features",use_container_width=True): nav("features")
             with a2:
                 if st.button("Pricing",key="top_pricing",use_container_width=True): nav("pricing")
             with a3:
-                if st.button("Login",key="top_login",use_container_width=True): nav("login")
+                if st.button("Contact",key="top_contact",use_container_width=True): nav("contact")
             with a4:
+                if st.button("Login",key="top_login",use_container_width=True): nav("login")
+            with a5:
                 if st.button("Sign Up →",key="top_signup",type="primary",use_container_width=True): nav("signup")
             st.markdown('</div>', unsafe_allow_html=True)
     st.markdown('<hr class="sw-divider">', unsafe_allow_html=True)
@@ -1681,8 +1694,19 @@ def page_signup():
                 elif not agree: st.error("Please agree to the Terms of Service.")
                 else:
                     ok,msg=signup(email,pw,name)
-                    if ok: st.success(f"✅ Welcome, {name}!"); time.sleep(0.3); nav("dashboard")
-                    else:  st.error(msg)
+                    if ok:
+                        # Generate verification code and send email
+                        code=str(random.randint(100000,999999))
+                        st.session_state["_verify_code"]=code
+                        st.session_state["_verify_email"]=email
+                        st.session_state["_verify_user"]={"name":name}
+                        # Log out the just-created session — require verification first
+                        st.session_state.pop("user",None); st.session_state.pop("role",None)
+                        ok2,info=_send_verification_email(email,code)
+                        if not ok2 and info and info.startswith("DEMO_CODE:"):
+                            st.session_state["_demo_code"]=info.split(":",1)[1]
+                        nav("verify_email")
+                    else: st.error(msg)
         if st.button("Already have an account? Sign In",key="s2l",use_container_width=True): nav("login")
 
 def page_forgot():
@@ -2282,7 +2306,60 @@ def page_screener():
 # ─────────────────────────────────────────────────────────────
 def page_pricing():
     render_topbar("pricing")
+
+    # ── Embedded Stripe checkout (show when session created) ──
+    if st.session_state.get("_stripe_embed"):
+        embed = st.session_state["_stripe_embed"]
+        plan_name = "Premium Monthly ($29/mo)" if embed["plan"]=="premium" else "Annual Plan ($199/yr)"
+        render_topbar("pricing")
+        st.markdown(f"""
+        <div style="text-align:center;padding:32px 0 20px;">
+            <div style="font-size:11px;font-weight:700;color:{BLUE};letter-spacing:2px;text-transform:uppercase;margin-bottom:10px;">Secure Checkout</div>
+            <div style="font-size:26px;font-weight:800;color:#e2e8f0;margin-bottom:6px;">Complete Your Subscription</div>
+            <div style="font-size:13px;color:#374f6e;">{plan_name} · Powered by Stripe · SSL Encrypted</div>
+        </div>
+        """, unsafe_allow_html=True)
+        import streamlit.components.v1 as _comp
+        _comp.html(f"""
+        <script src="https://js.stripe.com/v3/"></script>
+        <style>
+        body{{margin:0;padding:20px;background:#07090f;font-family:Inter,sans-serif;}}
+        #checkout-form{{background:#0d1525;border:1px solid rgba(255,255,255,0.1);border-radius:14px;padding:24px;max-width:500px;margin:0 auto;}}
+        #submit-btn{{width:100%;padding:14px;background:linear-gradient(135deg,#1d4ed8,#2563eb);color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:700;cursor:pointer;margin-top:16px;}}
+        #submit-btn:hover{{background:linear-gradient(135deg,#1e40af,#1d4ed8);}}
+        #submit-btn:disabled{{opacity:0.6;cursor:not-allowed;}}
+        #msg{{color:#f87171;font-size:12px;margin-top:8px;text-align:center;}}
+        </style>
+        <div id="checkout-form">
+        <div id="payment-element"></div>
+        <button id="submit-btn" onclick="submitPayment()">🔒 Subscribe Now</button>
+        <div id="msg"></div>
+        </div>
+        <script>
+        var stripe=Stripe('{embed["pub_key"]}');
+        var elements=stripe.elements({{clientSecret:'{embed["client_secret"]}',appearance:{{theme:'night',variables:{{colorPrimary:'#2563eb',colorBackground:'#0d1525',colorText:'#e2e8f0',colorDanger:'#ef4444',borderRadius:'8px'}}}}}});
+        var paymentElement=elements.create('payment');
+        paymentElement.mount('#payment-element');
+        async function submitPayment(){{
+            var btn=document.getElementById('submit-btn');
+            var msg=document.getElementById('msg');
+            btn.disabled=true;btn.textContent='Processing...';
+            var {{error}}=await stripe.confirmPayment({{
+                elements,confirmParams:{{return_url:'{embed["return_url"]}'}},
+            }});
+            if(error){{msg.textContent=error.message;btn.disabled=false;btn.textContent='🔒 Subscribe Now';}}
+        }}
+        </script>
+        """, height=450, scrolling=False)
+        st.markdown("<br>",unsafe_allow_html=True)
+        if st.button("← Cancel and go back to pricing", key="cancel_embed"):
+            st.session_state.pop("_stripe_embed", None)
+            st.rerun()
+        return
+
     st.markdown('<div class="pg">', unsafe_allow_html=True)
+
+    # ── Header ──
     st.markdown(f"""
     <div style="text-align:center;padding:32px 0 28px;">
         <div style="font-size:11px;font-weight:700;color:{BLUE};letter-spacing:2px;text-transform:uppercase;margin-bottom:10px;">Simple, Transparent Pricing</div>
@@ -2291,248 +2368,196 @@ def page_pricing():
     </div>
     """, unsafe_allow_html=True)
 
-    import streamlit.components.v1 as components
+    # ── Card CSS ──
+    st.markdown(f"""<style>
+    .sw-pc-col {{
+        background:{CARD};border:1px solid rgba(255,255,255,0.1);
+        border-radius:14px;padding:24px 20px;
+        transition:all 0.25s cubic-bezier(0.4,0,0.2,1);
+        display:flex;flex-direction:column;box-sizing:border-box;
+        min-height:560px;
+    }}
+    .sw-pc-col:hover{{border-color:rgba(37,99,235,0.35);}}
+    .sw-pc-sel-blue{{
+        border:2px solid {BLUE}!important;
+        background:linear-gradient(160deg,#04091d,{CARD})!important;
+        box-shadow:0 16px 48px rgba(37,99,235,0.35)!important;
+        transform:translateY(-6px)!important;
+    }}
+    .sw-pc-sel-gold{{
+        border:2px solid {GOLD}!important;
+        background:linear-gradient(160deg,#160c00,#0f0800,{CARD})!important;
+        box-shadow:0 16px 48px rgba(245,158,11,0.35)!important;
+        transform:translateY(-6px)!important;
+    }}
+    .sw-pc-badge{{font-size:9px;font-weight:700;padding:3px 10px;border-radius:20px;display:inline-block;letter-spacing:1px;margin-bottom:10px;}}
+    .sw-pc-feats{{font-size:12px;color:#374f6e;line-height:2.3;flex:1;}}
+    .sw-pc-dim{{color:#1e3050;}}
+    /* CTA button integrated into card bottom */
+    .sw-pc-cta .stButton>button{{
+        border-radius:0 0 12px 12px!important;
+        margin-top:0!important;
+        font-size:13px!important;font-weight:600!important;
+        padding:14px 0!important;
+        min-height:48px!important;
+        border-top:1px solid rgba(255,255,255,0.07)!important;
+        background:rgba(255,255,255,0.03)!important;
+        color:#374f6e!important;border-left:none!important;border-right:none!important;border-bottom:none!important;
+    }}
+    .sw-pc-cta-active .stButton>button{{
+        background:linear-gradient(135deg,#1d4ed8,#2563eb)!important;
+        color:#fff!important;border-top:1px solid rgba(37,99,235,0.4)!important;
+        font-weight:700!important;
+    }}
+    .sw-pc-cta-gold-active .stButton>button{{
+        background:linear-gradient(135deg,#92400e,#d97706,#f59e0b)!important;
+        color:#1a0800!important;border-top:1px solid rgba(245,158,11,0.4)!important;
+        font-weight:800!important;
+    }}
+    [data-testid="stHorizontalBlock"]:has(.sw-pc-col){{align-items:flex-end!important;}}
+    </style>""", unsafe_allow_html=True)
 
-    pricing_html = (
-        '<style>'
-        'body{margin:0;padding:0;font-family:Inter,sans-serif;background:transparent;}'
-        '.pw{display:flex;gap:16px;align-items:flex-end;padding:12px 2px 2px;overflow:visible;}'
-        '.pc{'
-        'background:#0d1525;border:1px solid rgba(255,255,255,0.1);'
-        'border-radius:14px;padding:24px 20px 0;flex:1;cursor:pointer;'
-        'transition:all 0.3s cubic-bezier(0.4,0,0.2,1);'
-        'display:flex;flex-direction:column;box-sizing:border-box;'
-        'height:560px;overflow:hidden;'
-        '}'
-        '.pc:hover{border-color:rgba(37,99,235,0.35);transform:translateY(-2px);}'
-        '.sel-blue{'
-        'border:2px solid #2563eb!important;'
-        'background:linear-gradient(160deg,#04091d,#0d1525)!important;'
-        'box-shadow:0 20px 60px rgba(37,99,235,0.4)!important;'
-        'transform:translateY(-10px)!important;'
-        'height:560px!important;'
-        '}'
-        '.sel-gold{'
-        'border:2px solid #f59e0b!important;'
-        'background:linear-gradient(160deg,#160c00,#0f0800,#0d1525)!important;'
-        'box-shadow:0 20px 60px rgba(245,158,11,0.4)!important;'
-        'transform:translateY(-10px)!important;'
-        'height:560px!important;'
-        '}'
-        '.badge{font-size:9px;font-weight:700;padding:3px 10px;border-radius:20px;'
-        'display:inline-block;letter-spacing:1px;margin-bottom:10px;}'
-        '.plan-name{font-size:14px;font-weight:600;margin-bottom:2px;}'
-        '.price{font-family:monospace;font-size:44px;font-weight:800;line-height:1.1;margin-bottom:2px;}'
-        '.period{font-size:11px;color:#374f6e;margin-bottom:14px;}'
-        'hr.card-hr{border:none;border-top:1px solid rgba(255,255,255,0.07);margin:10px 0 14px;}'
-        'hr.gold-hr{border:none;border-top:1px solid rgba(245,158,11,0.15);margin:10px 0 14px;}'
-        '.feats{flex:1;font-size:12px;color:#374f6e;line-height:2.3;}'
-        '.dim{color:#1e3050;}'
-        '.cta{'
-        'display:block;width:calc(100% + 40px);margin:20px -20px 0;'
-        'padding:15px 0;border:none;text-align:center;'
-        'cursor:pointer;font-size:13px;font-weight:600;letter-spacing:0.4px;'
-        'transition:all 0.2s;border-radius:0;'
-        '}'
-        '.cta-blue{background:linear-gradient(135deg,#1d4ed8,#2563eb);color:#fff;'
-        'border-top:1px solid rgba(37,99,235,0.4)!important;}'
-        '.cta-blue:hover{background:linear-gradient(135deg,#1e40af,#1d4ed8);}'
-        '.cta-dim{background:rgba(255,255,255,0.025);color:#374f6e;'
-        'border-top:1px solid rgba(255,255,255,0.06)!important;font-size:12px!important;}'
-        '.cta-dim:hover{background:rgba(255,255,255,0.05);color:#6b7fa0;}'
-        '.cta-gold{background:linear-gradient(135deg,#92400e,#d97706,#f59e0b);color:#1a0800;'
-        'border-top:1px solid rgba(245,158,11,0.4)!important;}'
-        '.cta-gold:hover{opacity:0.9;}'
-        '.toast{'
-        'display:none;margin-top:12px;padding:10px 14px;border-radius:8px;'
-        'font-size:12px;line-height:1.6;'
-        'background:rgba(37,99,235,0.1);border:1px solid rgba(37,99,235,0.25);color:#93b4fd;'
-        '}'
-        '@media(max-width:768px){'
-        '.pw{flex-direction:column;align-items:stretch;padding:4px 0;}'
-        '.pc{min-height:auto!important;transform:none!important;}'
-        '.sel-blue,.sel-gold{transform:none!important;}'
-        '}'
-        '</style>'
-        '<div class="pw">'
+    if "sel_plan" not in st.session_state:
+        st.session_state.sel_plan = "premium"
+    sel = st.session_state.sel_plan
 
-        # ── FREE ──
-        '<div class="pc" id="c-free" onclick="sel(\'free\')">'
-        '<span id="b-free" class="badge" style="background:rgba(255,255,255,0.06);color:#4a5e7a;">Free Plan</span>'
-        '<div class="plan-name" style="color:#94a3b8;">Free</div>'
-        '<div class="price" style="color:#e2e8f0;">$0</div>'
-        '<div class="period">forever · no card needed</div>'
-        '<hr class="card-hr">'
-        '<div class="feats">'
-        '✅&nbsp; Market overview &amp; indexes<br>'
-        '✅&nbsp; RSI &amp; MACD signals<br>'
-        '✅&nbsp; Plain-English insights<br>'
-        '✅&nbsp; 7 composite categories<br>'
-        '✅&nbsp; Watchlist (10 stocks)<br>'
-        '✅&nbsp; BUY / AVOID signals<br>'
-        '<span class="dim">'
-        '❌&nbsp; 10 premium categories<br>'
-        '❌&nbsp; Short squeeze scanner<br>'
-        '❌&nbsp; Advanced screener<br>'
-        '❌&nbsp; BI analytics &amp; score details'
-        '</span>'
-        '</div>'
-        '<button class="cta cta-dim" id="cta-free" onclick="go(event,\'free\')">Get Started Free</button>'
-        '</div>'
+    def card_badge(plan):
+        if plan == sel:
+            return f'<span class="sw-pc-badge" style="background:#1e3a8a;color:#93b4fd;">✓ SELECTED</span>'
+        if plan == "premium":
+            return f'<span class="sw-pc-badge" style="background:rgba(37,99,235,0.15);color:{BLUE};">⭐ MOST POPULAR</span>'
+        if plan == "annual":
+            return f'<span class="sw-pc-badge" style="background:linear-gradient(90deg,#92400e,#d97706);color:#fff8e1;">👑 BEST VALUE — SAVE 43%</span>'
+        return f'<span class="sw-pc-badge" style="background:rgba(255,255,255,0.06);color:#4a5e7a;">Free Plan</span>'
 
-        # ── PREMIUM ──
-        '<div class="pc sel-blue" id="c-premium" onclick="sel(\'premium\')">'
-        '<span id="b-premium" class="badge" style="background:#1e3a8a;color:#93b4fd;">✓ SELECTED</span>'
-        '<div class="plan-name" style="color:#e2e8f0;">Premium Monthly</div>'
-        '<div class="price" style="color:#e2e8f0;">$29</div>'
-        '<div class="period">per month · cancel anytime</div>'
-        '<hr class="card-hr">'
-        '<div class="feats">'
-        '✅&nbsp; Everything in Free<br>'
-        '✅&nbsp; All 17 composite categories<br>'
-        '✅&nbsp; Short squeeze scanner<br>'
-        '✅&nbsp; Advanced screener<br>'
-        '✅&nbsp; Full BI analytics &amp; charts<br>'
-        '✅&nbsp; Score breakdowns<br>'
-        '✅&nbsp; Volume surge detection<br>'
-        '✅&nbsp; Unlimited watchlist<br>'
-        '✅&nbsp; Watchlist score analytics<br>'
-        '✅&nbsp; Saved screener configs'
-        '</div>'
-        '<button class="cta cta-blue" id="cta-premium" onclick="go(event,\'premium\')">🚀 Get Premium →</button>'
-        '</div>'
+    c1, c2, c3 = st.columns(3, gap="small")
 
-        # ── ANNUAL ──
-        '<div class="pc" id="c-annual" onclick="sel(\'annual\')">'
-        '<span id="b-annual" class="badge" style="background:linear-gradient(90deg,#92400e,#d97706);color:#fff8e1;">👑 BEST VALUE — SAVE 43%</span>'
-        '<div class="plan-name" style="color:#e2e8f0;">Annual Plan</div>'
-        '<div class="price" style="color:#f59e0b;">$199</div>'
-        '<div class="period">per year · $16.58/mo · save $149</div>'
-        '<hr class="gold-hr">'
-        '<div class="feats">'
-        '✅&nbsp; Everything in Premium<br>'
-        '✅&nbsp; Priority support<br>'
-        '✅&nbsp; Early feature access<br>'
-        '✅&nbsp; Export to CSV<br>'
-        '✅&nbsp; Custom alert schedules<br>'
-        '✅&nbsp; API access (Q3 2026)<br>'
-        '✅&nbsp; Backtesting (coming)<br>'
-        '✅&nbsp; Portfolio tracker (coming)'
-        '</div>'
-        '<button class="cta cta-dim" id="cta-annual" onclick="go(event,\'annual\')">👑 Select Annual Plan</button>'
-        '</div>'
-
-        '</div>'
-        '<div class="toast" id="toast"></div>'
-        '<script>'
-        'var cur="premium";'
-        'function sel(p){'
-        '  cur=p;'
-        '  var plans=["free","premium","annual"];'
-        '  plans.forEach(function(x){'
-        '    var card=document.getElementById("c-"+x);'
-        '    var badge=document.getElementById("b-"+x);'
-        '    var cta=document.getElementById("cta-"+x);'
-        '    var isS=(x===p);'
-        '    if(x==="free"){'
-        '      card.className="pc"+(isS?" sel-blue":"");'
-        '      badge.textContent=isS?"✓ SELECTED":"Free Plan";'
-        '      badge.style.cssText=isS?"background:#1e3a8a;color:#93b4fd;":"background:rgba(255,255,255,0.06);color:#4a5e7a;";'
-        '      cta.className="cta "+(isS?"cta-blue":"cta-dim");'
-        '      cta.textContent=isS?"Get Started Free →":"Get Started Free";'
-        '    } else if(x==="premium"){'
-        '      card.className="pc"+(isS?" sel-blue":"");'
-        '      badge.textContent=isS?"✓ SELECTED":"⭐ MOST POPULAR";'
-        '      badge.style.cssText=isS?"background:#1e3a8a;color:#93b4fd;":"background:rgba(37,99,235,0.18);color:#60a5fa;";'
-        '      cta.className="cta "+(isS?"cta-blue":"cta-dim");'
-        '      cta.textContent=isS?"🚀 Get Premium →":"🚀 Select Premium";'
-        '    } else {'
-        '      card.className="pc"+(isS?" sel-gold":"");'
-        '      badge.textContent=isS?"✓ SELECTED":"👑 BEST VALUE — SAVE 43%";'
-        '      badge.style.cssText=isS?"background:rgba(245,158,11,0.2);color:#f59e0b;":"background:linear-gradient(90deg,#92400e,#d97706);color:#fff8e1;";'
-        '      cta.className="cta "+(isS?"cta-gold":"cta-dim");'
-        '      cta.textContent=isS?"👑 Get Annual — Best Value →":"👑 Select Annual Plan";'
-        '    }'
-        '  });'
-        '}'
-        'function go(e,p){'
-        '  e.stopPropagation();'
-        '  if(cur!==p){sel(p);return;}'
-        '  if(p==="free"){'
-        '    var t=document.getElementById("toast");'
-        '    t.textContent="✅ Use the Sign Up button above to create your free account!";'
-        '    t.style.display="block";'
-        '    setTimeout(function(){t.style.display="none";},5000);'
-        '    return;'
-        '  }'
-        '  // Submit a hidden form to navigate parent - works with Streamlit sandbox allow-forms'
-        '  var f=document.createElement("form");'
-        '  f.method="GET";f.target="_top";f.action="";'
-        '  var i=document.createElement("input");'
-        '  i.type="hidden";i.name="checkout";i.value=p;'
-        '  f.appendChild(i);document.body.appendChild(f);f.submit();'
-        '}'
-        '</script>'
-    )
-
-    components.html(pricing_html, height=660)
-
-    # ── Real Streamlit checkout buttons — guaranteed to work regardless of iframe sandbox ──
-    if is_authed():
-        st.markdown(f"""<style>
-        button[aria-label="🚀 Subscribe — Premium $29/mo"]{{
-            background:linear-gradient(135deg,#1d4ed8,#2563eb) !important;
-            border-color:#2563eb !important;color:#fff !important;font-weight:700 !important;
-        }}
-        button[aria-label="🚀 Subscribe — Premium $29/mo"]:hover{{
-            background:linear-gradient(135deg,#1e40af,#1d4ed8) !important;
-        }}
-        </style>""", unsafe_allow_html=True)
-        cb1, cb2, cb3 = st.columns(3, gap="small")
-        with cb1:
-            if st.button("Get Started Free →", key="ck_free", use_container_width=True):
-                nav("dashboard")
-        with cb2:
-            if st.button("🚀 Subscribe — Premium $29/mo", key="ck_prem", type="primary", use_container_width=True):
-                with st.spinner("Creating secure checkout..."):
-                    url, err = create_checkout_session("premium", st.session_state.user["email"])
-                if url: st.session_state["_redirect_url"] = url; st.rerun()
-                else: st.error(f"Checkout error: {err}")
-        with cb3:
-            st.markdown('<div class="gold-btn">', unsafe_allow_html=True)
-            if st.button("👑 Subscribe — Annual $199/yr", key="ck_ann", use_container_width=True):
-                with st.spinner("Creating secure checkout..."):
-                    url, err = create_checkout_session("annual", st.session_state.user["email"])
-                if url: st.session_state["_redirect_url"] = url; st.rerun()
-                else: st.error(f"Checkout error: {err}")
-            st.markdown('</div>', unsafe_allow_html=True)
-    else:
-        _,lc,_ = st.columns([1,2,1])
-        with lc:
-            st.markdown(f'<div style="text-align:center;font-size:13px;color:#374f6e;margin-bottom:10px;">Create a free account to subscribe</div>',unsafe_allow_html=True)
-            if st.button("Create Account & Subscribe →", key="ck_signup", type="primary", use_container_width=True):
-                nav("signup")
-    if stripe_configured():
-        st.markdown(f"""<div style="text-align:center;margin-top:12px;">
-            <span style="font-size:11px;color:#374f6e;">🔒 Secure payments by </span>
-            <span style="font-size:11px;font-weight:700;color:#6775ba;">stripe</span>
-            <span style="font-size:11px;color:#374f6e;"> · Cancel anytime · SSL encrypted</span>
-        </div>""", unsafe_allow_html=True)
-    else:
-        st.markdown(f"""<div style="background:#0e1421;border:1px solid rgba(245,158,11,0.2);border-radius:8px;padding:14px 18px;margin-top:12px;">
-            <div style="font-size:12px;font-weight:700;color:{GOLD};margin-bottom:5px;">⚙️ Payment processing not yet configured</div>
-            <div style="font-size:12px;color:#374f6e;line-height:1.8;">
-            To enable Stripe payments, add to <strong style="color:#e2e8f0;">Streamlit Cloud → Settings → Secrets</strong>:<br>
-            <code style="background:#060a12;color:#4ade80;padding:2px 6px;border-radius:4px;font-size:11px;">STRIPE_SECRET_KEY = "sk_live_..."</code><br>
-            <code style="background:#060a12;color:#4ade80;padding:2px 6px;border-radius:4px;font-size:11px;">STRIPE_PRICE_MONTHLY = "price_..."</code><br>
-            <code style="background:#060a12;color:#4ade80;padding:2px 6px;border-radius:4px;font-size:11px;">STRIPE_PRICE_ANNUAL = "price_..."</code><br>
-            <code style="background:#060a12;color:#4ade80;padding:2px 6px;border-radius:4px;font-size:11px;">APP_URL = "https://stockwins.streamlit.app"</code><br>
-            To upgrade manually in the meantime: <a href="mailto:support@stockwins.com" style="color:#93b4fd;">support@stockwins.com</a>
+    # ── FREE ──
+    with c1:
+        cls = "sw-pc-sel-blue" if sel=="free" else ""
+        st.markdown(f"""<div class="sw-pc-col {cls}">
+            {card_badge("free")}
+            <div style="font-size:14px;font-weight:600;color:#94a3b8;margin-bottom:2px;">Free</div>
+            <div style="font-family:'JetBrains Mono',monospace;font-size:44px;font-weight:800;color:#e2e8f0;line-height:1.1;margin-bottom:2px;">$0</div>
+            <div style="font-size:11px;color:#374f6e;margin-bottom:14px;">forever · no card needed</div>
+            <hr style="border-color:{BORDER};margin:10px 0 14px;">
+            <div class="sw-pc-feats">
+            ✅&nbsp; Market overview &amp; indexes<br>
+            ✅&nbsp; RSI &amp; MACD signals<br>
+            ✅&nbsp; Plain-English insights<br>
+            ✅&nbsp; 7 composite categories<br>
+            ✅&nbsp; Watchlist (10 stocks)<br>
+            ✅&nbsp; BUY / AVOID signals<br>
+            <span class="sw-pc-dim">❌&nbsp; 10 premium categories<br>
+            ❌&nbsp; Short squeeze scanner<br>
+            ❌&nbsp; Advanced screener<br>
+            ❌&nbsp; BI analytics &amp; score details</span>
             </div>
         </div>""", unsafe_allow_html=True)
+        cta_cls = "sw-pc-cta-active" if sel=="free" else "sw-pc-cta"
+        st.markdown(f'<div class="{cta_cls}">', unsafe_allow_html=True)
+        btn_lbl = "Get Started Free →" if sel=="free" else "Select Free Plan"
+        if st.button(btn_lbl, key="pc_free", use_container_width=True, type="primary" if sel=="free" else "secondary"):
+            if sel != "free":
+                st.session_state.sel_plan = "free"; st.rerun()
+            else:
+                nav("signup" if not is_authed() else "dashboard")
+        st.markdown('</div>', unsafe_allow_html=True)
 
-    st.markdown('<div class="disc" style="margin-top:16px;">⚠️ Educational platform only. Not financial advice. Trading involves risk.</div>', unsafe_allow_html=True)
+    # ── PREMIUM ──
+    with c2:
+        cls = "sw-pc-sel-blue" if sel=="premium" else ""
+        st.markdown(f"""<div class="sw-pc-col {cls}">
+            {card_badge("premium")}
+            <div style="font-size:14px;font-weight:600;color:#e2e8f0;margin-bottom:2px;">Premium Monthly</div>
+            <div style="font-family:'JetBrains Mono',monospace;font-size:44px;font-weight:800;color:#e2e8f0;line-height:1.1;margin-bottom:2px;">$29</div>
+            <div style="font-size:11px;color:#374f6e;margin-bottom:14px;">per month · cancel anytime</div>
+            <hr style="border-color:{BORDER};margin:10px 0 14px;">
+            <div class="sw-pc-feats">
+            ✅&nbsp; Everything in Free<br>
+            ✅&nbsp; All 17 composite categories<br>
+            ✅&nbsp; Short squeeze scanner<br>
+            ✅&nbsp; Advanced screener<br>
+            ✅&nbsp; Full BI analytics &amp; charts<br>
+            ✅&nbsp; Score breakdowns<br>
+            ✅&nbsp; Volume surge detection<br>
+            ✅&nbsp; Unlimited watchlist<br>
+            ✅&nbsp; Watchlist score analytics<br>
+            ✅&nbsp; Saved screener configs
+            </div>
+        </div>""", unsafe_allow_html=True)
+        cta_cls = "sw-pc-cta-active" if sel=="premium" else "sw-pc-cta"
+        st.markdown(f'<div class="{cta_cls}">', unsafe_allow_html=True)
+        btn_lbl = "🚀 Get Premium →" if sel=="premium" else "🚀 Select Premium"
+        if st.button(btn_lbl, key="pc_premium", use_container_width=True, type="primary" if sel=="premium" else "secondary"):
+            if sel != "premium":
+                st.session_state.sel_plan = "premium"; st.rerun()
+            else:
+                if not is_authed(): st.session_state["_pending_checkout"]="premium"; nav("signup")
+                else: _do_checkout("premium")
+        st.markdown('</div>', unsafe_allow_html=True)
+
+    # ── ANNUAL ──
+    with c3:
+        cls = "sw-pc-sel-gold" if sel=="annual" else ""
+        st.markdown(f"""<div class="sw-pc-col {cls}">
+            {card_badge("annual")}
+            <div style="font-size:14px;font-weight:600;color:#e2e8f0;margin-bottom:2px;">Annual Plan</div>
+            <div style="font-family:'JetBrains Mono',monospace;font-size:44px;font-weight:800;color:{GOLD};line-height:1.1;margin-bottom:2px;">$199</div>
+            <div style="font-size:11px;color:#374f6e;margin-bottom:14px;">per year · $16.58/mo · save $149</div>
+            <hr style="border-color:rgba(245,158,11,0.15);margin:10px 0 14px;">
+            <div class="sw-pc-feats">
+            ✅&nbsp; Everything in Premium<br>
+            ✅&nbsp; Priority support<br>
+            ✅&nbsp; Early feature access<br>
+            ✅&nbsp; Export to CSV<br>
+            ✅&nbsp; Custom alert schedules<br>
+            ✅&nbsp; API access (Q3 2026)<br>
+            ✅&nbsp; Backtesting (coming)<br>
+            ✅&nbsp; Portfolio tracker (coming)
+            </div>
+        </div>""", unsafe_allow_html=True)
+        cta_cls = "sw-pc-cta-gold-active" if sel=="annual" else "sw-pc-cta"
+        st.markdown(f'<div class="{cta_cls}">', unsafe_allow_html=True)
+        btn_lbl = "👑 Get Annual — Best Value →" if sel=="annual" else "👑 Select Annual Plan"
+        if st.button(btn_lbl, key="pc_annual", use_container_width=True, type="primary" if sel=="annual" else "secondary"):
+            if sel != "annual":
+                st.session_state.sel_plan = "annual"; st.rerun()
+            else:
+                if not is_authed(): st.session_state["_pending_checkout"]="annual"; nav("signup")
+                else: _do_checkout("annual")
+        st.markdown('</div>', unsafe_allow_html=True)
+
+    # ── Stripe status bar ──
+    if stripe_configured():
+        st.markdown("""<div style="text-align:center;margin-top:16px;">
+            <span style="font-size:11px;color:#374f6e;">🔒 Secure payments by </span>
+            <span style="font-size:12px;font-weight:800;color:#6775ba;letter-spacing:-0.5px;">stripe</span>
+            <span style="font-size:11px;color:#374f6e;"> · SSL encrypted · Cancel anytime · 30-day refund policy</span>
+        </div>""", unsafe_allow_html=True)
+    else:
+        st.markdown(f"""<div style="background:#0e1421;border:1px solid rgba(245,158,11,0.2);border-radius:8px;padding:12px 16px;margin-top:12px;font-size:12px;color:#374f6e;">
+        ⚙️ <strong style="color:{GOLD};">Payment processing not yet configured.</strong>
+        Add <code>STRIPE_SECRET_KEY</code>, <code>STRIPE_PRICE_MONTHLY</code>, <code>STRIPE_PRICE_ANNUAL</code>, <code>APP_URL</code> to Streamlit Secrets, then reboot.
+        In the meantime email <a href="mailto:support@stockwins.com" style="color:#93b4fd;">support@stockwins.com</a> to upgrade manually.
+        </div>""", unsafe_allow_html=True)
+
+    st.markdown('<div class="disc" style="margin-top:14px;">⚠️ Educational platform only. Not financial advice. Trading involves risk.</div>', unsafe_allow_html=True)
     st.markdown('</div>', unsafe_allow_html=True)
+
+
+def _do_checkout(plan):
+    """Trigger Stripe checkout — embed if possible, redirect as fallback."""
+    email = st.session_state.user["email"]
+    with st.spinner("Setting up secure checkout..."):
+        url, err = create_checkout_session(plan, email)
+    if err:
+        st.error(f"Checkout error: {err}")
+        return
+    # Try embedded checkout if client_secret available (newer Stripe SDK)
+    # Otherwise store URL for link_button display
+    st.session_state["_redirect_url"] = url
+    st.rerun()
 
 
 # ─────────────────────────────────────────────────────────────
@@ -2831,6 +2856,211 @@ APP_URL = "https://your-app.streamlit.app"</pre>
     st.markdown('</div>',unsafe_allow_html=True)
 
 # ─────────────────────────────────────────────────────────────
+# EMAIL VERIFICATION
+# ─────────────────────────────────────────────────────────────
+def _send_verification_email(email, code):
+    """
+    Send verification email. Requires RESEND_API_KEY or SENDGRID_API_KEY in Secrets.
+    Falls back to simulated mode (shows code in UI) if not configured.
+    Returns (True, None) or (False, error_msg).
+    """
+    # Try Resend
+    try:
+        resend_key = st.secrets.get("RESEND_API_KEY","")
+        if resend_key:
+            import requests as _r
+            resp = _r.post("https://api.resend.com/emails",
+                headers={"Authorization":f"Bearer {resend_key}","Content-Type":"application/json"},
+                json={"from":"StockWins <noreply@stockwins.com>",
+                      "to":[email],
+                      "subject":"Your StockWins verification code",
+                      "html":f"""<div style="font-family:Inter,sans-serif;background:#07090f;color:#e2e8f0;padding:40px;">
+                        <h2 style="color:#2563eb;">Stock<span style="color:#f59e0b;">W</span>ins</h2>
+                        <h3>Verify your email</h3>
+                        <p style="color:#6b7fa0;">Your verification code is:</p>
+                        <div style="font-size:36px;font-weight:800;letter-spacing:8px;color:#2563eb;padding:20px;background:#0d1525;border-radius:12px;text-align:center;">{code}</div>
+                        <p style="color:#6b7fa0;margin-top:20px;">This code expires in 10 minutes. If you didn't request this, ignore this email.</p>
+                      </div>"""})
+            if resp.status_code in (200,201): return True,None
+            return False, f"Email send failed: {resp.text}"
+    except: pass
+    # Simulated — show code in UI
+    return False, f"DEMO_CODE:{code}"
+
+def page_verify_email():
+    render_topbar()
+    _,cc,_=st.columns([1,2,1])
+    with cc:
+        email = st.session_state.get("_verify_email","")
+        st.markdown(f"""<div style="text-align:center;padding:40px 0 24px;">
+            <div style="font-size:32px;margin-bottom:12px;">📧</div>
+            <div style="font-size:24px;font-weight:800;color:#e2e8f0;margin-bottom:8px;">Check Your Email</div>
+            <div style="font-size:13px;color:#374f6e;">We sent a 6-digit verification code to<br>
+            <strong style="color:#93b4fd;">{email}</strong></div>
+        </div>""",unsafe_allow_html=True)
+
+        # Show demo code if email not configured
+        demo = st.session_state.get("_demo_code","")
+        if demo:
+            st.info(f"📋 **Demo mode** — your code is: **{demo}** (email sending not configured)")
+
+        with st.form("vf"):
+            code_in = st.text_input("Enter 6-digit code", placeholder="123456", max_chars=6)
+            if st.form_submit_button("Verify Email →", type="primary", use_container_width=True):
+                stored = st.session_state.get("_verify_code","")
+                if code_in.strip() == stored:
+                    uemail = st.session_state.get("_verify_email","")
+                    if uemail in st.session_state.users_db:
+                        st.session_state.users_db[uemail]["verified"] = True
+                    # Complete login
+                    udata = st.session_state.get("_verify_user",{})
+                    st.session_state.user = {"email":uemail,"name":udata.get("name","")}
+                    st.session_state.role = "free"
+                    for k in ["_verify_code","_verify_email","_verify_user","_demo_code"]:
+                        st.session_state.pop(k,None)
+                    st.success("✅ Email verified! Welcome to StockWins.")
+                    time.sleep(0.3)
+                    nav("dashboard")
+                else:
+                    st.error("❌ Incorrect code. Please try again.")
+
+        st.markdown("<br>",unsafe_allow_html=True)
+        if st.button("Resend code", key="resend_v"):
+            code = str(random.randint(100000,999999))
+            st.session_state["_verify_code"] = code
+            ok,info = _send_verification_email(email, code)
+            if not ok and info and info.startswith("DEMO_CODE:"):
+                st.session_state["_demo_code"] = info.split(":",1)[1]
+                st.success("Code regenerated (demo mode — shown above)")
+            elif ok: st.success("✅ New code sent!")
+            else: st.error(f"Send failed: {info}")
+        if st.button("← Back to Sign Up", key="v_back"):
+            for k in ["_verify_code","_verify_email","_verify_user","_demo_code"]:
+                st.session_state.pop(k,None)
+            nav("signup")
+
+# ─────────────────────────────────────────────────────────────
+# PAGE: CONTACT
+# ─────────────────────────────────────────────────────────────
+def page_contact():
+    render_topbar()
+    st.markdown('<div class="pg">',unsafe_allow_html=True)
+    st.markdown(f"""<div style="text-align:center;padding:32px 0 24px;">
+        <div style="font-size:11px;font-weight:700;color:{BLUE};letter-spacing:2px;text-transform:uppercase;margin-bottom:10px;">We're Here to Help</div>
+        <div style="font-size:34px;font-weight:900;color:#f1f5f9;letter-spacing:-1px;margin-bottom:8px;">Contact & Support</div>
+        <div style="font-size:14px;color:#374f6e;">Reach us by email or chat with our AI support assistant below.</div>
+    </div>""",unsafe_allow_html=True)
+
+    top1,top2,top3 = st.columns(3,gap="small")
+    with top1:
+        st.markdown(f'''<div class="card card-blue" style="text-align:center;padding:24px;">
+            <div style="font-size:28px;margin-bottom:10px;">📧</div>
+            <div style="font-size:14px;font-weight:700;color:#e2e8f0;margin-bottom:6px;">Email Support</div>
+            <div style="font-size:12px;color:#374f6e;margin-bottom:12px;">For account, billing, and general questions</div>
+            <a href="mailto:support@stockwins.com" style="font-size:13px;font-weight:700;color:#93b4fd;text-decoration:none;">support@stockwins.com</a>
+            <div style="font-size:11px;color:#2a3a52;margin-top:6px;">Response within 24 hours</div>
+        </div>''',unsafe_allow_html=True)
+    with top2:
+        st.markdown(f'''<div class="card" style="text-align:center;padding:24px;">
+            <div style="font-size:28px;margin-bottom:10px;">💬</div>
+            <div style="font-size:14px;font-weight:700;color:#e2e8f0;margin-bottom:6px;">AI Support Chat</div>
+            <div style="font-size:12px;color:#374f6e;margin-bottom:12px;">Instant answers to platform questions</div>
+            <div style="font-size:13px;font-weight:700;color:#4ade80;">● Available Now</div>
+            <div style="font-size:11px;color:#2a3a52;margin-top:6px;">Scroll down to chat</div>
+        </div>''',unsafe_allow_html=True)
+    with top3:
+        st.markdown(f'''<div class="card card-gold" style="text-align:center;padding:24px;">
+            <div style="font-size:28px;margin-bottom:10px;">👑</div>
+            <div style="font-size:14px;font-weight:700;color:#e2e8f0;margin-bottom:6px;">Priority Support</div>
+            <div style="font-size:12px;color:#374f6e;margin-bottom:12px;">For Annual plan subscribers</div>
+            <div style="font-size:13px;font-weight:700;color:{GOLD};">4-hour response time</div>
+            <div style="font-size:11px;color:#2a3a52;margin-top:6px;">Annual plan feature</div>
+        </div>''',unsafe_allow_html=True)
+
+    st.markdown("<br>",unsafe_allow_html=True)
+    st.markdown('<div class="sec-hd">💬 AI Support Assistant</div>',unsafe_allow_html=True)
+    st.markdown('<div style="font-size:12px;color:#374f6e;margin-bottom:14px;">Ask anything about StockWins — features, categories, signals, billing, or how to use the platform.</div>',unsafe_allow_html=True)
+
+    # Chat history
+    if "support_chat" not in st.session_state:
+        st.session_state.support_chat = [
+            {"role":"assistant","content":"Hi! I'm the StockWins support assistant. I can help with questions about the platform, our composite signal categories, billing, features, or anything else. What can I help you with today?"}
+        ]
+
+    # Display chat
+    for msg in st.session_state.support_chat:
+        if msg["role"]=="assistant":
+            st.markdown(f'''<div style="display:flex;gap:10px;margin-bottom:12px;align-items:flex-start;">
+                <div style="background:{BLUE};border-radius:50%;width:28px;height:28px;display:flex;align-items:center;justify-content:center;font-size:12px;flex-shrink:0;">SW</div>
+                <div style="background:{CARD};border:1px solid {BORDER};border-radius:0 10px 10px 10px;padding:10px 14px;font-size:13px;color:#d1d9e6;max-width:80%;line-height:1.6;">{msg["content"]}</div>
+            </div>''',unsafe_allow_html=True)
+        else:
+            st.markdown(f'''<div style="display:flex;gap:10px;margin-bottom:12px;align-items:flex-start;flex-direction:row-reverse;">
+                <div style="background:#2a3a52;border-radius:50%;width:28px;height:28px;display:flex;align-items:center;justify-content:center;font-size:11px;flex-shrink:0;">You</div>
+                <div style="background:#0a1628;border:1px solid rgba(37,99,235,0.2);border-radius:10px 0 10px 10px;padding:10px 14px;font-size:13px;color:#d1d9e6;max-width:80%;line-height:1.6;">{msg["content"]}</div>
+            </div>''',unsafe_allow_html=True)
+
+    # Input
+    with st.form("support_form", clear_on_submit=True):
+        uc1,uc2=st.columns([5,1],gap="small")
+        with uc1: user_q=st.text_input("",placeholder="Ask a question...",label_visibility="collapsed")
+        with uc2: send=st.form_submit_button("Send →",type="primary",use_container_width=True)
+        if send and user_q.strip():
+            st.session_state.support_chat.append({"role":"user","content":user_q.strip()})
+            # Call Anthropic API for support response
+            with st.spinner(""):
+                try:
+                    import requests as _r
+                    sys_prompt = """You are the StockWins customer support assistant. StockWins is a premium stock intelligence platform.
+
+Key facts:
+- StockWins has 17 proprietary composite signal categories combining RSI, MACD, volume, social sentiment, short interest
+- Free plan: 7 composite categories, market overview, watchlist (10 stocks), BUY/AVOID signals
+- Premium ($29/mo): All 17 categories, squeeze scanner, advanced screener, BI analytics, score breakdowns, unlimited watchlist
+- Annual ($199/yr): Everything in Premium + priority support, early access, export, API access
+- Data sources: Yahoo Finance (free), Twelve Data (optional), StockTwits (social sentiment)
+- Signals are educational/algorithmic only — NOT financial advice
+- Back button works to go to previous page
+- For billing: support@stockwins.com
+
+Be helpful, concise, and friendly. If asked about a specific stock or investment advice, remind them signals are educational only."""
+                    msgs = [{"role":m["role"],"content":m["content"]} for m in st.session_state.support_chat]
+                    resp = _r.post("https://api.anthropic.com/v1/messages",
+                        headers={"Content-Type":"application/json"},
+                        json={"model":"claude-sonnet-4-20250514","max_tokens":400,
+                              "system":sys_prompt,"messages":msgs},
+                        timeout=20)
+                    if resp.status_code==200:
+                        answer = resp.json()["content"][0]["text"]
+                    else:
+                        answer = "I'm having trouble connecting right now. Please email support@stockwins.com for help."
+                except Exception as e:
+                    answer = f"Connection issue. Please email support@stockwins.com — we typically respond within 24 hours."
+            st.session_state.support_chat.append({"role":"assistant","content":answer})
+            st.rerun()
+
+    st.markdown("<br>",unsafe_allow_html=True)
+    if st.button("🗑 Clear Chat",key="clear_support"):
+        st.session_state.support_chat=[{"role":"assistant","content":"Chat cleared. How can I help you?"}]
+        st.rerun()
+
+    # FAQ quick links
+    st.markdown("<br>",unsafe_allow_html=True)
+    st.markdown('<div class="sec-hd">Common Questions</div>',unsafe_allow_html=True)
+    faqs=[
+        ("How do I upgrade to Premium?","Go to Pricing in the top nav, select Premium Monthly or Annual, and click the subscribe button. Payment is processed securely via Stripe."),
+        ("What are the composite signal categories?","StockWins has 17 proprietary categories combining multiple signals simultaneously — like RSI + short float + social sentiment — to surface setups not visible through standard TA."),
+        ("Is this financial advice?","No. StockWins provides algorithmic, educational signals only. Nothing constitutes financial advice. Always consult a licensed financial advisor."),
+        ("How do I cancel my subscription?","Go to Settings → Subscription → Open Billing Portal. You can cancel anytime with no questions asked."),
+        ("Can I get a refund?","Yes — contact support@stockwins.com within 30 days of your subscription start date."),
+    ]
+    for q,a in faqs:
+        with st.expander(q):
+            st.markdown(f'<div style="font-size:13px;color:#374f6e;line-height:1.75;">{a}</div>',unsafe_allow_html=True)
+
+    st.markdown('</div>',unsafe_allow_html=True)
+
+# ─────────────────────────────────────────────────────────────
 # ROUTER
 # ─────────────────────────────────────────────────────────────
 render_sidebar()
@@ -2892,8 +3122,10 @@ elif page=="landing":      page_landing()
 elif page=="features":     page_features()
 elif page=="login":        page_login()
 elif page=="signup":       page_signup()
+elif page=="verify_email": page_verify_email()
 elif page=="forgot_pw":    page_forgot()
 elif page=="pricing":      page_pricing()
+elif page=="contact":      page_contact()
 elif page=="dashboard":    page_dashboard()
 elif page=="discover":     page_discover()
 elif page=="watchlist":    page_watchlist()
