@@ -1238,10 +1238,10 @@ def page_landing():
     <style>
     .sw-feat-grid{{display:grid;grid-template-columns:1fr 1fr;gap:28px;padding:0 48px;align-items:stretch;}}
     @media(max-width:900px){{.sw-feat-grid{{grid-template-columns:1fr;gap:20px;padding:0 20px;}}}}
-    /* Force DEMO boxes to fill wrapper height */
-    .sw-demo-wrap>div{{height:100%;box-sizing:border-box;}}
-    .sw-demo-wrap>div>div:last-child{{height:100%;}}
-    .sw-prem-box{{height:100%;box-sizing:border-box;display:flex;flex-direction:column;}}
+    /* Both content boxes same fixed height */
+    .sw-demo-wrap{{overflow:hidden;height:320px;box-sizing:border-box;flex:none!important;}}
+    .sw-demo-wrap>div{{height:100%;}}
+    .sw-prem-box{{height:320px;box-sizing:border-box;display:flex;flex-direction:column;flex:none!important;}}
     </style>
     <div class="sw-feat-grid" style="margin-bottom:28px;">
       <div style="display:flex;flex-direction:column;height:100%;">
@@ -1360,23 +1360,21 @@ def page_landing():
     st.markdown('<div style="padding:0 48px;"><div class="sec-hd">What Traders Are Saying</div></div>',unsafe_allow_html=True)
 
     testimonials = [
-        ("Michael T.", "The Squeeze + Buzz category flagged AMC 3 days before it ran 40%. The BUY signals are actually explainable — not just a black box."),
-        ("Sarah K.", "Hidden Movers is my secret weapon. Found 3 stocks before they went viral on StockTwits. No other platform has this composite logic."),
-        ("David R.", "The plain-English explanations changed how I analyze stocks. I finally understand WHY something is a buy, not just that it is."),
-        ("James M.", "Triple Lock caught NVDA before a 12% move in 2 days. When all 4 signals align at once, it's genuinely different from everything else I've used."),
-        ("Priya L.", "Fallen Angels is brilliant. I found 4 stocks in deep RSI territory that reversed within a week. No other screener surfaces this combination."),
-        ("Carlos V.", "The score breakdown actually teaches me what's happening. I went from guessing to understanding why a setup matters. Game changer."),
-        ("Emma W.", "Smart Money Signal flagged MSTR right before the institutional volume surge. The volume-to-MACD correlation caught something I would have missed."),
-        ("Ryan T.", "Volatility Squeeze is pure alpha. When Bollinger Bands compress to a 90-day low AND volume is building — it's like a coiled spring. I trust the signal now."),
+        ("⭐⭐⭐⭐⭐", "Michael T.", "Squeeze + Buzz flagged AMC 3 days before it ran 40%. First tool I've used where the BUY signal actually comes with a reason."),
+        ("⭐⭐⭐⭐", "Sarah K.", "Hidden Movers is solid. Found 2 stocks quietly building before they showed up on StockTwits. Would be 5 stars if the UI loaded a bit faster."),
+        ("⭐⭐⭐⭐⭐", "James M.", "Triple Lock caught a setup on NVDA that my normal screener completely missed. When all 4 signals align it really does feel different."),
+        ("⭐⭐⭐⭐", "David R.", "Plain-English explanations are great for someone who doesn't live and breathe TA. Finally understand what a Golden Cross actually means in practice."),
+        ("⭐⭐⭐⭐⭐", "Carlos V.", "The composite categories are the only reason I stay. Smart Money Signal and Volume Breakout together have been my best performers this quarter."),
+        ("⭐⭐⭐⭐⭐", "Emma W.", "Volatility Squeeze + high volume = coiled spring. Caught 3 clean setups last month. The math behind it is actually explained, which I respect."),
     ]
 
     # Build scrolling HTML — duplicate cards for seamless loop
     cards_html = ""
-    for name, quote in testimonials * 2:
+    for stars, name, quote in testimonials * 2:
         cards_html += (
             f'<div class="tc">'
-            f'<div class="stars">⭐⭐⭐⭐⭐</div>'
-            f'<div class="quote">"{quote}"</div>'
+            f'<div class="stars">{stars}</div>'
+            f'<div class="quote">\u201c{quote}\u201d</div>'
             f'<div class="author">{name}</div>'
             f'</div>'
         )
@@ -2157,22 +2155,22 @@ def page_pricing():
         'border-radius:14px;padding:24px 20px 0;flex:1;cursor:pointer;'
         'transition:all 0.3s cubic-bezier(0.4,0,0.2,1);'
         'display:flex;flex-direction:column;box-sizing:border-box;'
-        'min-height:580px;overflow:hidden;'
+        'height:560px;overflow:hidden;'
         '}'
         '.pc:hover{border-color:rgba(37,99,235,0.35);transform:translateY(-2px);}'
         '.sel-blue{'
         'border:2px solid #2563eb!important;'
         'background:linear-gradient(160deg,#04091d,#0d1525)!important;'
         'box-shadow:0 20px 60px rgba(37,99,235,0.4)!important;'
-        'transform:translateY(-14px)!important;'
-        'min-height:580px!important;'
+        'transform:translateY(-10px)!important;'
+        'height:560px!important;'
         '}'
         '.sel-gold{'
         'border:2px solid #f59e0b!important;'
         'background:linear-gradient(160deg,#160c00,#0f0800,#0d1525)!important;'
         'box-shadow:0 20px 60px rgba(245,158,11,0.4)!important;'
-        'transform:translateY(-14px)!important;'
-        'min-height:580px!important;'
+        'transform:translateY(-10px)!important;'
+        'height:560px!important;'
         '}'
         '.badge{font-size:9px;font-weight:700;padding:3px 10px;border-radius:20px;'
         'display:inline-block;letter-spacing:1px;margin-bottom:10px;}'
@@ -2220,8 +2218,6 @@ def page_pricing():
         '<hr class="card-hr">'
         '<div class="feats">'
         '✅&nbsp; Market overview &amp; indexes<br>'
-        '✅&nbsp; 5 standard categories<br>'
-        '✅&nbsp; StockTwits trending list<br>'
         '✅&nbsp; RSI &amp; MACD signals<br>'
         '✅&nbsp; Plain-English insights<br>'
         '✅&nbsp; 7 composite categories<br>'
@@ -2231,8 +2227,7 @@ def page_pricing():
         '❌&nbsp; 10 premium categories<br>'
         '❌&nbsp; Short squeeze scanner<br>'
         '❌&nbsp; Advanced screener<br>'
-        '❌&nbsp; BI analytics charts<br>'
-        '❌&nbsp; Score breakdowns'
+        '❌&nbsp; BI analytics &amp; score details'
         '</span>'
         '</div>'
         '<button class="cta cta-dim" id="cta-free" onclick="go(event,\'free\')">Get Started Free</button>'
