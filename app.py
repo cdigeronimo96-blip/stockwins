@@ -1851,38 +1851,73 @@ def page_dashboard():
 # ─────────────────────────────────────────────────────────────
 def page_discover():
     render_topbar("discover")
-    fc,mc=st.columns([1,4],gap="small")
+    st.markdown(f"""<style>
+    /* Discover sidebar buttons */
+    [data-testid="stSidebar"] + div .stButton>button,
+    .disc-sidebar .stButton>button{{
+        text-align:left!important;justify-content:flex-start!important;
+        font-size:12px!important;padding:7px 12px!important;min-height:34px!important;
+    }}
+    </style>""", unsafe_allow_html=True)
+
+    sel = st.session_state.get("discover_cat","🔥💥 Squeeze + Buzz")
+
+    # ── Category header strip (full width, above everything) ──
+    is_comp = sel in COMPOSITE_CATS
+    tier_str=""
+    if is_comp:
+        _,tier = COMPOSITE_CATS[sel]
+        tier_clr = GOLD if tier=="premium" else GREEN
+        tier_lbl = "PREMIUM ⭐" if tier=="premium" else "FREE"
+        tier_str = f'<span style="background:{"rgba(245,158,11,.12)" if tier=="premium" else "rgba(34,197,94,.1)"};color:{tier_clr};font-size:9px;font-weight:700;padding:3px 9px;border-radius:20px;border:1px solid {"rgba(245,158,11,.3)" if tier=="premium" else "rgba(34,197,94,.3)"};margin-left:10px;">{tier_lbl}</span>'
+    desc_str = COMPOSITE_CATS[sel][0] if is_comp else f"Browse all {sel} stocks"
+    is_locked = is_comp and COMPOSITE_CATS.get(sel,("",None))[1]=="premium" and not is_premium()
+
+    st.markdown(f"""
+    <div style="background:#080b14;border-bottom:1px solid {BORDER};padding:14px 24px;margin:-1px 0 0;">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;">
+            <div style="font-size:20px;font-weight:800;color:#e2e8f0;">{sel}</div>
+            {tier_str}
+        </div>
+        <div style="font-size:12px;color:#374f6e;font-style:italic;">{desc_str}</div>
+    </div>
+    """, unsafe_allow_html=True)
+
+    # ── 2-column: sidebar | results ──
+    fc, mc = st.columns([1,4], gap="small")
     with fc:
-        st.markdown('<div style="padding:16px 0 0 0;">',unsafe_allow_html=True)
-        st.markdown('<div style="font-size:10px;font-weight:700;color:rgba(255,255,255,.2);letter-spacing:1.5px;text-transform:uppercase;padding:0 0 6px;">Our Composite Picks</div>',unsafe_allow_html=True)
+        st.markdown('<div style="padding:12px 0 0;">',unsafe_allow_html=True)
+
+        # Quick category chips at top
+        st.markdown('<div style="font-size:9px;font-weight:700;color:rgba(255,255,255,.2);letter-spacing:1.5px;text-transform:uppercase;padding:0 0 5px;">Composite Picks</div>',unsafe_allow_html=True)
         for cat,(desc,tier) in COMPOSITE_CATS.items():
-            is_locked=tier=="premium" and not is_premium()
-            safe=cat.replace(" ","_").replace("+","p").replace("→","r").replace("🌡️","T").replace("📉","D")[:28]
-            if st.button(f"{cat}{'  ⭐' if is_locked else ''}",key=f"disc_c_{safe}",use_container_width=True):
-                if is_locked: nav("pricing")
+            is_l = tier=="premium" and not is_premium()
+            safe = cat.replace(" ","_").replace("+","p").replace("→","r").replace("🌡️","T").replace("📉","D")[:28]
+            is_active = cat==sel
+            btn_style = "primary" if is_active else "secondary"
+            lbl = cat+(" ⭐" if is_l else "")
+            if st.button(lbl, key=f"disc_c_{safe}", use_container_width=True, type=btn_style):
+                if is_l: nav("pricing")
                 else: st.session_state.discover_cat=cat; st.rerun()
-        st.markdown('<div style="font-size:10px;font-weight:700;color:rgba(255,255,255,.2);letter-spacing:1.5px;text-transform:uppercase;padding:12px 0 6px;">Standard</div>',unsafe_allow_html=True)
+
+        st.markdown('<div style="font-size:9px;font-weight:700;color:rgba(255,255,255,.2);letter-spacing:1.5px;text-transform:uppercase;padding:10px 0 5px;">Standard</div>',unsafe_allow_html=True)
         for cat in CATEGORIES:
-            if st.button(cat,key=f"disc_s_{cat[:20].replace(' ','_')}",use_container_width=True):
+            is_active = cat==sel
+            if st.button(cat, key=f"disc_s_{cat[:20].replace(' ','_')}", use_container_width=True,
+                         type="primary" if is_active else "secondary"):
                 st.session_state.discover_cat=cat; st.rerun()
+
         if not is_premium():
             st.markdown("<br>",unsafe_allow_html=True)
             if gold_btn("Unlock All →","disc_up"): nav("pricing")
         st.markdown('</div>',unsafe_allow_html=True)
+
     with mc:
-        sel=st.session_state.get("discover_cat","🔥💥 Squeeze + Buzz")
-        is_comp=sel in COMPOSITE_CATS
-        tier_str=""
-        if is_comp:
-            _,tier=COMPOSITE_CATS[sel]
-            tier_str=f'<span class="tag {"tag-prem" if tier=="premium" else "tag-free"}" style="margin-left:6px;">{"PREMIUM ⭐" if tier=="premium" else "FREE"}</span>'
-        desc_str=COMPOSITE_CATS[sel][0] if is_comp else f"Browse all {sel} stocks"
-        st.markdown('<div class="pg" style="padding-top:16px;">',unsafe_allow_html=True)
-        st.markdown(f'<div class="sec-hd">{sel} {tier_str}</div>',unsafe_allow_html=True)
-        if is_comp: st.markdown(f'<div style="font-size:12px;color:#374f6e;margin-bottom:12px;font-style:italic;">{desc_str}</div>',unsafe_allow_html=True)
-        is_locked=is_comp and COMPOSITE_CATS[sel][1]=="premium" and not is_premium()
-        if is_locked: render_lock(sel)
-        else: render_cat(sel,show_why=is_comp)
+        st.markdown('<div style="padding:12px 0 0;">',unsafe_allow_html=True)
+        if is_locked:
+            render_lock(sel)
+        else:
+            render_cat(sel, show_why=is_comp)
         st.markdown('</div>',unsafe_allow_html=True)
 
 # ─────────────────────────────────────────────────────────────
@@ -2094,7 +2129,17 @@ def page_detail():
 def page_bi():
     render_topbar("bi_dashboard")
     st.markdown('<div class="pg">',unsafe_allow_html=True)
-    st.markdown('<div class="sec-hd">📊 BI Analytics Dashboard <span class="tag tag-live" style="margin-left:auto;">Live</span></div>',unsafe_allow_html=True)
+
+    # ── Page intro ──
+    st.markdown(f"""
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:16px;">
+        <div>
+            <div style="font-size:22px;font-weight:800;color:#e2e8f0;margin-bottom:4px;">📊 BI Analytics Dashboard</div>
+            <div style="font-size:13px;color:#374f6e;">Market-wide intelligence across gainers, sectors, sentiment, volume surges, and composite signals.</div>
+        </div>
+        <span class="tag tag-live" style="font-size:11px;padding:5px 12px;margin-top:4px;">● Live</span>
+    </div>
+    """, unsafe_allow_html=True)
 
     with st.spinner("Loading analytics…"):
         movers=get_bi_movers(); secs=get_sectors(); idx=get_indexes(); hot=st_hot()
@@ -2105,96 +2150,102 @@ def page_bi():
     top_g=gainers[0] if gainers else {}; top_l=losers[0] if losers else {}; top_v=vol_ldrs[0] if vol_ldrs else {}
     bull_sec=max(secs,key=secs.get) if secs else "N/A"; avg_pct=sum(m["pct"] for m in movers)/len(movers) if movers else 0
 
+    # ── Stat bar — bigger and clearer ──
     sw=st.columns(5)
-    for col,(v,l,c) in zip(sw,[
-        (top_g.get("t","—"),f"Top Gainer +{top_g.get('pct',0):.1f}%",GREEN),
-        (top_l.get("t","—"),f"Top Loser {top_l.get('pct',0):.1f}%",RED),
-        (top_v.get("t","—"),f"Vol King {top_v.get('vr',0):.1f}× avg","#60a5fa"),
-        (bull_sec,f"+{secs.get(bull_sec,0):.1f}% today",GREEN),
-        ("Bullish" if avg_pct>0.3 else "Bearish" if avg_pct<-0.3 else "Neutral",f"Avg {avg_pct:+.2f}%",GREEN if avg_pct>0 else RED),
-    ]):
-        col.markdown(f'<div class="stat"><div class="stat-v" style="font-size:15px;color:{c};">{v}</div><div class="stat-l">{l}</div></div>',unsafe_allow_html=True)
+    stat_data=[
+        (top_g.get("t","—"), f"Top Gainer · +{top_g.get('pct',0):.1f}%", GREEN),
+        (top_l.get("t","—"), f"Top Loser · {top_l.get('pct',0):.1f}%", RED),
+        (top_v.get("t","—"), f"Volume King · {top_v.get('vr',0):.1f}× avg", "#60a5fa"),
+        (bull_sec, f"Strongest Sector · +{secs.get(bull_sec,0):.1f}%", GREEN),
+        ("Bullish" if avg_pct>0.3 else "Bearish" if avg_pct<-0.3 else "Neutral", f"Market Mood · {avg_pct:+.2f}% avg", GREEN if avg_pct>0 else RED if avg_pct<0 else "#6b7fa0"),
+    ]
+    for col,(v,l,c) in zip(sw,stat_data):
+        col.markdown(f'<div class="stat"><div style="font-family:\'JetBrains Mono\',monospace;font-size:18px;font-weight:800;color:{c};margin-bottom:3px;">{v}</div><div style="font-size:11px;color:#374f6e;">{l}</div></div>',unsafe_allow_html=True)
 
     st.markdown("<br>",unsafe_allow_html=True)
-    tabs=st.tabs(["📈 Leaderboards","🗺️ Sector Chart","📡 Social","🔊 Volume Surge","🎯 Opportunity Matrix"])
+    tabs=st.tabs(["📈 Leaderboards","🗺️ Sector","📡 Sentiment","🔊 Volume","🎯 Opportunity Matrix"])
+
+    CHART_LAYOUT = dict(
+        paper_bgcolor="rgba(0,0,0,0)",plot_bgcolor="rgba(0,0,0,0)",
+        margin=dict(l=0,r=70,t=10,b=0),height=320,
+        font=dict(family="Inter",size=13,color="#94a3b8"),
+        xaxis=dict(showgrid=False,color="#4a5e7a",tickfont=dict(size=12)),
+        yaxis=dict(showgrid=False,color="#60a5fa",tickfont=dict(family="JetBrains Mono",size=13,color="#60a5fa")),
+    )
 
     with tabs[0]:
         lc1,lc2,lc3=st.columns(3,gap="small")
         with lc1:
-            st.markdown(f'<div style="font-size:12px;font-weight:700;color:{GREEN};margin-bottom:8px;">🏆 Top Gainers</div>',unsafe_allow_html=True)
+            st.markdown(f'<div style="font-size:14px;font-weight:700;color:{GREEN};margin-bottom:10px;">🏆 Top Gainers</div>',unsafe_allow_html=True)
             if HAS_PLOTLY:
                 top10g=gainers[:10]
-                fig=go.Figure(go.Bar(x=[m["pct"] for m in top10g],y=[m["t"] for m in top10g],orientation="h",marker_color=GREEN,text=[f"+{m['pct']:.1f}%" for m in top10g],textposition="outside",textfont=dict(color=GREEN,size=10)))
-                fig.update_layout(paper_bgcolor="rgba(0,0,0,0)",plot_bgcolor="rgba(0,0,0,0)",margin=dict(l=0,r=60,t=0,b=0),height=280,xaxis=dict(showgrid=False,color="#4a5e7a"),yaxis=dict(showgrid=False,color="#60a5fa",tickfont=dict(family="JetBrains Mono",size=11)))
-                st.plotly_chart(fig,use_container_width=True)
+                fig=go.Figure(go.Bar(x=[m["pct"] for m in top10g],y=[m["t"] for m in top10g],orientation="h",marker_color=GREEN,text=[f"+{m['pct']:.1f}%" for m in top10g],textposition="outside",textfont=dict(color=GREEN,size=13,family="JetBrains Mono")))
+                fig.update_layout(**CHART_LAYOUT); st.plotly_chart(fig,use_container_width=True)
         with lc2:
-            st.markdown(f'<div style="font-size:12px;font-weight:700;color:{RED};margin-bottom:8px;">📉 Top Losers</div>',unsafe_allow_html=True)
+            st.markdown(f'<div style="font-size:14px;font-weight:700;color:{RED};margin-bottom:10px;">📉 Top Losers</div>',unsafe_allow_html=True)
             if HAS_PLOTLY:
                 top10l=losers[:10]
-                fig=go.Figure(go.Bar(x=[m["pct"] for m in top10l],y=[m["t"] for m in top10l],orientation="h",marker_color=RED,text=[f"{m['pct']:.1f}%" for m in top10l],textposition="outside",textfont=dict(color=RED,size=10)))
-                fig.update_layout(paper_bgcolor="rgba(0,0,0,0)",plot_bgcolor="rgba(0,0,0,0)",margin=dict(l=0,r=50,t=0,b=0),height=280,xaxis=dict(showgrid=False,color="#4a5e7a"),yaxis=dict(showgrid=False,color="#60a5fa",tickfont=dict(family="JetBrains Mono",size=11)))
-                st.plotly_chart(fig,use_container_width=True)
+                fig=go.Figure(go.Bar(x=[m["pct"] for m in top10l],y=[m["t"] for m in top10l],orientation="h",marker_color=RED,text=[f"{m['pct']:.1f}%" for m in top10l],textposition="outside",textfont=dict(color=RED,size=13,family="JetBrains Mono")))
+                fig.update_layout(**CHART_LAYOUT); st.plotly_chart(fig,use_container_width=True)
         with lc3:
-            st.markdown(f'<div style="font-size:12px;font-weight:700;color:#60a5fa;margin-bottom:8px;">🔊 Volume Leaders</div>',unsafe_allow_html=True)
+            st.markdown(f'<div style="font-size:14px;font-weight:700;color:#60a5fa;margin-bottom:10px;">🔊 Volume Leaders</div>',unsafe_allow_html=True)
             if HAS_PLOTLY:
                 top10v=vol_ldrs[:10]
                 colors_v=[RED if m["vr"]>=3 else GOLD if m["vr"]>=2 else "#60a5fa" for m in top10v]
-                fig=go.Figure(go.Bar(x=[m["vr"] for m in top10v],y=[m["t"] for m in top10v],orientation="h",marker_color=colors_v,text=[f"{m['vr']:.1f}×" for m in top10v],textposition="outside"))
-                fig.update_layout(paper_bgcolor="rgba(0,0,0,0)",plot_bgcolor="rgba(0,0,0,0)",margin=dict(l=0,r=50,t=0,b=0),height=280,xaxis=dict(showgrid=False,color="#4a5e7a"),yaxis=dict(showgrid=False,color="#60a5fa",tickfont=dict(family="JetBrains Mono",size=11)))
-                st.plotly_chart(fig,use_container_width=True)
+                fig=go.Figure(go.Bar(x=[m["vr"] for m in top10v],y=[m["t"] for m in top10v],orientation="h",marker_color=colors_v,text=[f"{m['vr']:.1f}×" for m in top10v],textposition="outside",textfont=dict(size=13,family="JetBrains Mono")))
+                fig.update_layout(**CHART_LAYOUT); st.plotly_chart(fig,use_container_width=True)
 
     with tabs[1]:
         sec_sorted=sorted(secs.items(),key=lambda x:x[1],reverse=True)
         if HAS_PLOTLY:
             df_s=pd.DataFrame(sec_sorted,columns=["Sector","Change %"])
             colors=[f"rgba(34,197,94,{min(0.9,abs(c)/3+0.3)})" if c>0 else f"rgba(239,68,68,{min(0.9,abs(c)/3+0.3)})" for c in df_s["Change %"]]
-            fig=go.Figure(go.Bar(x=df_s["Sector"],y=df_s["Change %"],marker_color=colors,text=[f"{'▲' if c>=0 else '▼'}{abs(c):.2f}%" for c in df_s["Change %"]],textposition="outside",textfont=dict(color="#94a3b8",size=11)))
+            fig=go.Figure(go.Bar(x=df_s["Sector"],y=df_s["Change %"],marker_color=colors,text=[f"{'▲' if c>=0 else '▼'}{abs(c):.2f}%" for c in df_s["Change %"]],textposition="outside",textfont=dict(color="#94a3b8",size=13,family="JetBrains Mono")))
             fig.add_hline(y=0,line=dict(color="rgba(255,255,255,0.15)",width=1))
-            fig.update_layout(paper_bgcolor="rgba(0,0,0,0)",plot_bgcolor="rgba(0,0,0,0)",margin=dict(l=0,r=0,t=10,b=0),height=300,xaxis=dict(showgrid=False,color="#4a5e7a"),yaxis=dict(showgrid=True,gridcolor="rgba(255,255,255,0.04)",color="#4a5e7a"))
+            fig.update_layout(paper_bgcolor="rgba(0,0,0,0)",plot_bgcolor="rgba(0,0,0,0)",margin=dict(l=0,r=0,t=10,b=0),height=340,font=dict(size=13),xaxis=dict(showgrid=False,color="#4a5e7a",tickfont=dict(size=12)),yaxis=dict(showgrid=True,gridcolor="rgba(255,255,255,0.04)",color="#4a5e7a"))
             st.plotly_chart(fig,use_container_width=True)
 
     with tabs[2]:
         sc1,sc2=st.columns(2)
         with sc1:
-            st.markdown(f'<div style="font-size:12px;font-weight:700;color:#e2e8f0;margin-bottom:8px;">🔥 Trending on StockTwits</div>',unsafe_allow_html=True)
+            st.markdown(f'<div style="font-size:14px;font-weight:700;color:#e2e8f0;margin-bottom:10px;">🔥 Trending on StockTwits</div>',unsafe_allow_html=True)
             if HAS_PLOTLY:
                 sent_data=[{"ticker":t,"bull":st_sent(t)["bull"]} for t in hot[:8]]
                 df_sent=pd.DataFrame(sent_data).sort_values("bull",ascending=False)
                 colors_s=[GREEN if b>=60 else RED if b<40 else "#6b7fa0" for b in df_sent["bull"]]
-                fig=go.Figure(go.Bar(x=df_sent["ticker"],y=df_sent["bull"],marker_color=colors_s,text=[f"{b}% bull" for b in df_sent["bull"]],textposition="outside"))
+                fig=go.Figure(go.Bar(x=df_sent["ticker"],y=df_sent["bull"],marker_color=colors_s,text=[f"{b}%" for b in df_sent["bull"]],textposition="outside",textfont=dict(size=13,family="JetBrains Mono")))
                 fig.add_hline(y=50,line=dict(color="rgba(255,255,255,0.15)",width=1,dash="dot"))
-                fig.update_layout(paper_bgcolor="rgba(0,0,0,0)",plot_bgcolor="rgba(0,0,0,0)",margin=dict(l=0,r=0,t=10,b=0),height=250,yaxis=dict(range=[0,110],showgrid=False,color="#4a5e7a"),xaxis=dict(showgrid=False,color="#60a5fa",tickfont=dict(family="JetBrains Mono",size=11)))
+                fig.update_layout(paper_bgcolor="rgba(0,0,0,0)",plot_bgcolor="rgba(0,0,0,0)",margin=dict(l=0,r=0,t=10,b=0),height=280,yaxis=dict(range=[0,115],showgrid=False,color="#4a5e7a"),xaxis=dict(showgrid=False,color="#60a5fa",tickfont=dict(family="JetBrains Mono",size=13)))
                 st.plotly_chart(fig,use_container_width=True)
         with sc2:
-            st.markdown(f'<div style="font-size:12px;font-weight:700;color:#e2e8f0;margin-bottom:8px;">👥 Most Watchlisted</div>',unsafe_allow_html=True)
+            st.markdown(f'<div style="font-size:14px;font-weight:700;color:#e2e8f0;margin-bottom:10px;">👥 Most Watchlisted</div>',unsafe_allow_html=True)
             if HAS_PLOTLY:
                 targets=["NVDA","TSLA","AMD","AAPL","MSTR","PLTR","GME","META"]
                 wl_data=sorted([(t,st_sent(t)) for t in targets],key=lambda x:x[1].get("wl",0),reverse=True)
                 wl_df=pd.DataFrame([{"t":t,"wl":s["wl"]} for t,s in wl_data])
-                fig=go.Figure(go.Bar(x=wl_df["t"],y=wl_df["wl"],marker_color="rgba(96,165,250,0.7)",text=[f"{w:,}" for w in wl_df["wl"]],textposition="outside"))
-                fig.update_layout(paper_bgcolor="rgba(0,0,0,0)",plot_bgcolor="rgba(0,0,0,0)",margin=dict(l=0,r=0,t=10,b=0),height=250,yaxis=dict(showgrid=False,color="#4a5e7a"),xaxis=dict(showgrid=False,color="#60a5fa",tickfont=dict(family="JetBrains Mono",size=11)))
+                fig=go.Figure(go.Bar(x=wl_df["t"],y=wl_df["wl"],marker_color="rgba(96,165,250,0.7)",text=[f"{w:,}" for w in wl_df["wl"]],textposition="outside",textfont=dict(size=13,family="JetBrains Mono")))
+                fig.update_layout(paper_bgcolor="rgba(0,0,0,0)",plot_bgcolor="rgba(0,0,0,0)",margin=dict(l=0,r=0,t=10,b=0),height=280,yaxis=dict(showgrid=False,color="#4a5e7a"),xaxis=dict(showgrid=False,color="#60a5fa",tickfont=dict(family="JetBrains Mono",size=13)))
                 st.plotly_chart(fig,use_container_width=True)
 
     with tabs[3]:
         surge=[m for m in movers if m["vr"]>=1.5]; surge.sort(key=lambda x:x["vr"],reverse=True)
         if surge and HAS_PLOTLY:
             sg_df=pd.DataFrame(surge[:15])
-            fig=go.Figure()
-            fig.add_trace(go.Scatter(x=sg_df["t"],y=sg_df["pct"],mode="markers",
-                marker=dict(size=[min(max(vr*6,8),30) for vr in sg_df["vr"]],
-                            color=sg_df["vr"],colorscale=[[0,GREEN],[0.5,GOLD],[1,RED]],
-                            showscale=True,colorbar=dict(title="Vol Ratio",tickfont=dict(color="#6b7fa0",size=9))),
+            fig=go.Figure(go.Scatter(x=sg_df["t"],y=sg_df["pct"],mode="markers",
+                marker=dict(size=[min(max(vr*8,10),36) for vr in sg_df["vr"]],color=sg_df["vr"],colorscale=[[0,GREEN],[0.5,GOLD],[1,RED]],showscale=True,colorbar=dict(title="Vol×",tickfont=dict(color="#6b7fa0",size=11))),
                 text=[f"{t}: {vr:.1f}×" for t,vr in zip(sg_df["t"],sg_df["vr"])],hoverinfo="text+y"))
             fig.add_hline(y=0,line=dict(color="rgba(255,255,255,0.1)",width=1))
-            fig.update_layout(paper_bgcolor="rgba(0,0,0,0)",plot_bgcolor="rgba(0,0,0,0)",margin=dict(l=0,r=60,t=10,b=0),height=320,
-                xaxis=dict(showgrid=False,color="#60a5fa",tickfont=dict(family="JetBrains Mono",size=10)),
-                yaxis=dict(showgrid=True,gridcolor="rgba(255,255,255,0.04)",color="#4a5e7a"))
+            fig.update_layout(paper_bgcolor="rgba(0,0,0,0)",plot_bgcolor="rgba(0,0,0,0)",margin=dict(l=0,r=60,t=10,b=0),height=360,xaxis=dict(showgrid=False,color="#60a5fa",tickfont=dict(family="JetBrains Mono",size=13)),yaxis=dict(showgrid=True,gridcolor="rgba(255,255,255,0.04)",color="#4a5e7a",title="% Change"))
             st.plotly_chart(fig,use_container_width=True)
-            st.caption("Bubble size = volume ratio. Color: green=1.5× | amber=2× | red=3×+")
+            st.caption("Bubble size = volume ratio. Green=1.5× | Amber=2× | Red=3×+")
         else: st.info("No significant volume surges right now.")
 
     with tabs[4]:
-        st.markdown(f'<div class="sec-hd">🎯 Composite Opportunity Matrix <span style="background:rgba(168,85,247,0.15);color:#c084fc;border:1px solid rgba(168,85,247,0.35);font-size:10px;font-weight:700;padding:3px 10px;border-radius:20px;margin-left:8px;">StockWins Exclusive</span></div>',unsafe_allow_html=True)
+        st.markdown(f"""<div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
+            <div style="font-size:16px;font-weight:700;color:#e2e8f0;">🎯 Composite Opportunity Matrix</div>
+            <span style="background:rgba(168,85,247,0.15);color:#c084fc;border:1px solid rgba(168,85,247,0.35);font-size:10px;font-weight:700;padding:3px 10px;border-radius:20px;">StockWins Exclusive</span>
+        </div>
+        <div style="font-size:12px;color:#374f6e;margin-bottom:14px;">Signal strength across 10 tickers × 5 signal types. Darker green = stronger signal.</div>""",unsafe_allow_html=True)
         matrix_tickers=["NVDA","TSLA","AMD","AAPL","MSTR","GME","PLTR","META","MSFT","ARM"]
         signal_types=["Momentum","Trend","Volume","Sentiment","Squeeze"]
         max_vals={"Momentum":25,"Trend":20,"MACD":15,"Volume":15,"Sentiment":15,"Squeeze":10}
@@ -2206,16 +2257,23 @@ def page_bi():
         prog.empty()
         if HAS_PLOTLY:
             z=[[matrix_data.get(t,{}).get(sig,0)/max_vals.get(sig,15) for sig in signal_types] for t in matrix_tickers]
-            text_z=[[f"{matrix_data.get(t,{}).get(sig,0)}" for sig in signal_types] for t in matrix_tickers]
-            fig=go.Figure(go.Heatmap(z=z,x=signal_types,y=matrix_tickers,text=text_z,texttemplate="%{text}",textfont=dict(size=12,color="white"),colorscale=[[0,"#0a1020"],[0.33,"#1a3a00"],[0.66,"#0d5016"],[1,GREEN]],showscale=False,xgap=2,ygap=2))
-            fig.update_layout(paper_bgcolor="rgba(0,0,0,0)",plot_bgcolor="rgba(0,0,0,0)",margin=dict(l=0,r=0,t=0,b=0),height=350,xaxis=dict(side="top",showgrid=False,color="#6b7fa0",tickfont=dict(size=12)),yaxis=dict(showgrid=False,color="#60a5fa",tickfont=dict(family="JetBrains Mono",size=12)))
+            raw=[[matrix_data.get(t,{}).get(sig,0) for sig in signal_types] for t in matrix_tickers]
+            max_v=[max_vals.get(s,15) for s in signal_types]
+            fig=go.Figure(go.Heatmap(z=z,x=signal_types,y=matrix_tickers,
+                text=[[f"{raw[ri][ci]}/{max_v[ci]}" for ci in range(len(signal_types))] for ri in range(len(matrix_tickers))],
+                texttemplate="<b>%{text}</b>",textfont=dict(size=15,color="white",family="JetBrains Mono"),
+                colorscale=[[0,"#080f1e"],[0.3,"#0a2818"],[0.6,"#0d5016"],[1,GREEN]],
+                showscale=True,xgap=3,ygap=3,
+                colorbar=dict(thickness=14,tickfont=dict(color="#6b7fa0",size=11),title=dict(text="Score",font=dict(color="#6b7fa0",size=11)))))
+            fig.update_layout(paper_bgcolor="rgba(0,0,0,0)",plot_bgcolor="rgba(0,0,0,0)",margin=dict(l=0,r=80,t=60,b=0),height=420,
+                xaxis=dict(side="top",showgrid=False,color="#94a3b8",tickfont=dict(size=15,color="#94a3b8")),
+                yaxis=dict(showgrid=False,color="#60a5fa",tickfont=dict(family="JetBrains Mono",size=15,color="#60a5fa")))
             st.plotly_chart(fig,use_container_width=True)
+            descs={"Momentum":"RSI & momentum (max 25)","Trend":"MA alignment (max 20)","Volume":"vs 20d avg (max 15)","Sentiment":"Bullish % (max 15)","Squeeze":"Short float (max 10)"}
+            mc_=st.columns(len(signal_types))
+            for col,sig in zip(mc_,signal_types):
+                col.markdown(f'<div style="text-align:center;font-size:11px;color:#374f6e;padding:6px 4px;background:#080b14;border-radius:6px;"><div style="font-weight:700;color:#94a3b8;margin-bottom:2px;">{sig}</div>{descs[sig]}</div>',unsafe_allow_html=True)
     st.markdown('</div>',unsafe_allow_html=True)
-
-# ─────────────────────────────────────────────────────────────
-# PAGE: WATCHLIST
-# ─────────────────────────────────────────────────────────────
-def page_watchlist():
     render_topbar("watchlist")
     st.markdown('<div class="pg">',unsafe_allow_html=True)
     st.markdown('<div class="sec-hd">⭐ My Watchlist</div>',unsafe_allow_html=True)
@@ -2394,26 +2452,48 @@ def page_pricing():
     .sw-pc-feats{{font-size:12px;color:#374f6e;line-height:2.3;flex:1;}}
     .sw-pc-dim{{color:#1e3050;}}
     /* CTA button integrated into card bottom */
-    .sw-pc-cta .stButton>button{{
-        border-radius:0 0 12px 12px!important;
+    /* CTA button sits flush under each card via negative margin */
+    .sw-pc-cta,.sw-pc-cta-active,.sw-pc-cta-gold-active{{margin-top:-2px!important;}}
+    .sw-pc-cta .stButton>button,
+    .sw-pc-cta-active .stButton>button,
+    .sw-pc-cta-gold-active .stButton>button{{
+        border-radius:0 0 14px 14px!important;
         margin-top:0!important;
-        font-size:13px!important;font-weight:600!important;
-        padding:14px 0!important;
-        min-height:48px!important;
-        border-top:1px solid rgba(255,255,255,0.07)!important;
-        background:rgba(255,255,255,0.03)!important;
-        color:#374f6e!important;border-left:none!important;border-right:none!important;border-bottom:none!important;
+        font-size:14px!important;font-weight:700!important;
+        padding:15px 0!important;
+        min-height:52px!important;
+        letter-spacing:0.3px!important;
+        border-top:none!important;
+        border-left:1px solid rgba(255,255,255,0.1)!important;
+        border-right:1px solid rgba(255,255,255,0.1)!important;
+        border-bottom:1px solid rgba(255,255,255,0.1)!important;
+        background:rgba(255,255,255,0.04)!important;
+        color:#6b7fa0!important;
+        transition:all 0.2s ease!important;
+    }}
+    .sw-pc-cta .stButton>button:hover{{
+        background:rgba(37,99,235,0.1)!important;
+        color:#93b4fd!important;
+        border-color:rgba(37,99,235,0.3)!important;
     }}
     .sw-pc-cta-active .stButton>button{{
         background:linear-gradient(135deg,#1d4ed8,#2563eb)!important;
-        color:#fff!important;border-top:1px solid rgba(37,99,235,0.4)!important;
-        font-weight:700!important;
+        color:#fff!important;
+        border-color:{BLUE}!important;
+        box-shadow:0 4px 20px rgba(37,99,235,0.4)!important;
+    }}
+    .sw-pc-cta-active .stButton>button:hover{{
+        background:linear-gradient(135deg,#1e40af,#1d4ed8)!important;
     }}
     .sw-pc-cta-gold-active .stButton>button{{
         background:linear-gradient(135deg,#92400e,#d97706,#f59e0b)!important;
-        color:#1a0800!important;border-top:1px solid rgba(245,158,11,0.4)!important;
+        color:#1a0800!important;
+        border-color:{GOLD}!important;
+        box-shadow:0 4px 20px rgba(245,158,11,0.4)!important;
         font-weight:800!important;
     }}
+    /* Remove gap between card and button */
+    .sw-pc-col{{border-radius:14px 14px 0 0!important;margin-bottom:0!important;}}
     [data-testid="stHorizontalBlock"]:has(.sw-pc-col){{align-items:flex-end!important;}}
     </style>""", unsafe_allow_html=True)
 
@@ -3070,26 +3150,54 @@ handle_payment_return()
 
 # ── 2. Execute Stripe redirect if checkout session was just created ──
 if st.session_state.get("_redirect_url"):
-    url = st.session_state.get("_redirect_url")  # keep until user leaves
-    render_topbar()
-    _,cc,_ = st.columns([1,2,1])
-    with cc:
+    url = st.session_state.get("_redirect_url")
+    sel_plan = st.session_state.get("sel_plan","premium")
+    plan_display = {"premium":"Premium Monthly — $29/mo","annual":"Annual Plan — $199/yr","free":"Free"}.get(sel_plan,"Premium Monthly")
+    render_topbar("pricing")
+    st.markdown(f'<div style="font-size:12px;color:#374f6e;padding:0 0 16px;"><span style="color:#4a5e7a;">Pricing</span> <span style="color:#2a3a52;"> › </span> <span style="color:#e2e8f0;font-weight:600;">Secure Checkout</span></div>',unsafe_allow_html=True)
+    lc,rc = st.columns([3,2],gap="large")
+    with lc:
         st.markdown(f"""
-        <div style="text-align:center;padding:60px 0 32px;">
-            <div style="font-size:40px;margin-bottom:16px;">🔒</div>
-            <div style="font-size:24px;font-weight:800;color:#e2e8f0;margin-bottom:8px;">Your checkout is ready</div>
-            <div style="font-size:14px;color:#374f6e;margin-bottom:32px;">
-                Secure payment powered by Stripe · SSL encrypted · Cancel anytime
+        <div style="background:#0d1525;border:1px solid rgba(37,99,235,0.3);border-radius:14px;padding:24px;margin-bottom:14px;">
+            <div style="font-size:10px;font-weight:700;color:{BLUE};letter-spacing:2px;text-transform:uppercase;margin-bottom:8px;">Your Selected Plan</div>
+            <div style="display:flex;justify-content:space-between;align-items:center;">
+                <div style="font-size:18px;font-weight:800;color:#e2e8f0;">{plan_display}</div>
+                <div style="font-size:11px;color:#4ade80;font-weight:700;">● Cancel anytime</div>
             </div>
         </div>
+        <div style="background:#080b14;border:1px solid {BORDER};border-radius:10px;padding:16px 18px;margin-bottom:16px;">
+            <div style="font-size:12px;font-weight:700;color:#e2e8f0;margin-bottom:8px;">What you get immediately:</div>
+            <div style="font-size:13px;color:#374f6e;line-height:2.2;">✅&nbsp; All 17 composite signal categories<br>✅&nbsp; Short squeeze scanner + advanced screener<br>✅&nbsp; Full BI analytics &amp; opportunity matrix<br>✅&nbsp; Score breakdowns &amp; plain-English insights<br>✅&nbsp; Unlimited watchlist &amp; price alerts</div>
+        </div>
+        <style>
+        .sw-ck-btn{{display:block;width:100%;text-align:center;padding:17px;
+            background:linear-gradient(135deg,#1d4ed8,#2563eb);
+            color:#fff!important;font-size:15px;font-weight:700;
+            border-radius:10px;text-decoration:none;
+            box-shadow:0 6px 24px rgba(37,99,235,0.5);
+            transition:all 0.2s ease;letter-spacing:0.3px;}}
+        .sw-ck-btn:hover{{background:linear-gradient(135deg,#1e40af,#1d4ed8);box-shadow:0 10px 40px rgba(37,99,235,0.7);}}
+        </style>
+        <a class="sw-ck-btn" href="{url}" target="_top">🔒&nbsp; Complete Secure Checkout on Stripe →</a>
+        <div style="text-align:center;margin-top:10px;font-size:11px;color:#2a3a52;">Powered by <strong style="color:#6775ba;">Stripe</strong> · 256-bit SSL · PCI compliant · Card details never touch our servers</div>
         """, unsafe_allow_html=True)
-        st.link_button("🚀 Complete Checkout on Stripe →", url,
-                       type="primary", use_container_width=True)
-        st.markdown('<div style="text-align:center;margin-top:10px;font-size:11px;color:#2a3a52;">Opens Stripe\'s hosted checkout. Your card details never touch our servers.</div>',unsafe_allow_html=True)
-        st.markdown("<br>", unsafe_allow_html=True)
-        if st.button("← Back to Pricing", key="cancel_ck", use_container_width=True):
-            st.session_state.pop("_redirect_url", None)
-            nav("pricing")
+        st.markdown("<br>",unsafe_allow_html=True)
+        if st.button("← Change Plan",key="cancel_ck",use_container_width=True):
+            st.session_state.pop("_redirect_url",None); nav("pricing")
+    with rc:
+        st.markdown(f"""
+        <div style="background:#080b14;border:1px solid {BORDER};border-radius:14px;padding:22px;">
+            <div style="font-size:13px;font-weight:700;color:#e2e8f0;margin-bottom:12px;">🔒 Payment Security</div>
+            <div style="font-size:12px;color:#374f6e;line-height:2.2;">
+            🛡️&nbsp; 256-bit SSL encryption<br>💳&nbsp; Zero card data on our servers<br>🔄&nbsp; Cancel anytime, no questions<br>📧&nbsp; Instant access after payment<br>💰&nbsp; 30-day refund policy<br>🏦&nbsp; Powered by Stripe
+            </div>
+        </div>
+        <div style="background:#0d1525;border:1px solid rgba(34,197,94,0.2);border-radius:10px;padding:18px;margin-top:12px;">
+            <div style="font-size:12px;font-weight:700;color:{GREEN};margin-bottom:8px;">After Payment ✓</div>
+            <div style="font-size:12px;color:#374f6e;line-height:2.2;">1. Account upgrades instantly<br>2. All premium categories unlock<br>3. Set up watchlist &amp; alerts<br>4. Explore BI Analytics<br>5. Configure email digests</div>
+        </div>
+        <div style="margin-top:12px;text-align:center;font-size:12px;color:#2a3a52;">Questions? <a href="mailto:support@stockwins.com" style="color:#93b4fd;">support@stockwins.com</a></div>
+        """, unsafe_allow_html=True)
     st.stop()
 
 # ── 3. Payment notifications ──
