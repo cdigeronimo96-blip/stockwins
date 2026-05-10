@@ -49,6 +49,39 @@ def _save_global_db(db: dict):
     global _GLOBAL_USERS_DB
     _GLOBAL_USERS_DB = db
 
+# ─────────────────────────────────────────────────────────────
+# FILE-BASED PERSISTENCE (alerts + users readable by worker)
+# ─────────────────────────────────────────────────────────────
+import json as _json, os as _os
+
+ALERTS_DB_PATH = _os.environ.get("ALERTS_DB_PATH", "/tmp/sw_alerts.json")
+USERS_DB_PATH  = _os.environ.get("USERS_DB_PATH",  "/tmp/sw_users.json")
+
+def _read_json(path, default=None):
+    try:
+        with open(path) as f: return _json.load(f)
+    except: return default if default is not None else {}
+
+def _write_json(path, data):
+    try:
+        with open(path, "w") as f: _json.dump(data, f, indent=2, default=str)
+    except: pass
+
+def save_alerts_to_file(email, alerts):
+    db = _read_json(ALERTS_DB_PATH, {}); db[email] = alerts
+    _write_json(ALERTS_DB_PATH, db)
+
+def save_user_to_file(email, user_data):
+    db = _read_json(USERS_DB_PATH, {})
+    db[email] = {
+        "name":             user_data.get("name", ""),
+        "role":             user_data.get("role", "free"),
+        "telegram_chat_id": user_data.get("telegram_chat_id", ""),
+        "watchlist":        user_data.get("watchlist", []),
+        "digest_prefs":     user_data.get("digest_prefs", {}),
+    }
+    _write_json(USERS_DB_PATH, db)
+
 def _load_seed_accounts():
     today = datetime.now().strftime("%Y-%m-%d")
     try:
@@ -585,7 +618,7 @@ def init():
     st.session_state.initialized=True
     st.session_state.update({
         "page":"landing","user":None,"role":"guest",
-        "watchlist":[],"alerts":[],"saved_screeners":[],
+        "watchlist":[],"saved_screeners":[],
         "detail_ticker":None,"detail_data":{},"discover_cat":"🔥💥 Squeeze + Buzz",
         "prev_page":None,"hero_panel":0,"_page_hist":[],
         "users_db":_get_global_db(),
@@ -603,6 +636,9 @@ def login(email, pw):
     if email in db and db[email]["pw"]==hp(pw):
         st.session_state.user={"email":email,"name":db[email]["name"]}
         st.session_state.role=db[email]["role"]
+        # Load this user's alerts from file
+        user_alerts_db = _read_json(ALERTS_DB_PATH, {})
+        st.session_state.alerts = user_alerts_db.get(email, [])
         return True
     return False
 
@@ -612,6 +648,7 @@ def signup(email, pw, name):
     db[email]={"pw":hp(pw),"name":name,"role":"free","verified":False,
                "joined":datetime.now().strftime("%Y-%m-%d"),"plan":"Free"}
     _save_global_db(db)  # persist to process-level store
+    save_user_to_file(email, db[email])  # persist to file for worker
     st.session_state.site_stats["total_signups"]+=1
     st.session_state.user={"email":email,"name":name}
     st.session_state.role="free"
@@ -1163,6 +1200,10 @@ def render_sr(s, cat_key="", show_why=False):
         if st.button("✅ Watching" if in_wl else "➕ Watchlist",key=f"wl_{t}_{cat_key}",use_container_width=True):
             if in_wl: wl.remove(t)
             else:     wl.append(t)
+            if is_authed():
+                db = st.session_state.users_db.get(st.session_state.user["email"], {})
+                db["watchlist"] = wl
+                save_user_to_file(st.session_state.user["email"], db)
             st.rerun()
 
 def render_cat(cat,limit=10,show_why=False):
@@ -3002,6 +3043,7 @@ def page_settings():
                        "threshold":ap,"label":f"{at} {atype_lbl} {ap}","channels":channels or ["email"],
                        "active":True,"created":datetime.now().strftime("%Y-%m-%d %H:%M")}
                 alerts.append(new_a); st.session_state.alerts=alerts
+                if is_authed(): save_alerts_to_file(st.session_state.user["email"], alerts)
                 st.success(f"✅ Alert set: {at} {atype_lbl} {ap}")
 
         if alerts:
@@ -3016,10 +3058,14 @@ def page_settings():
                 with ac2:
                     tog="Pause" if a.get("active",True) else "Resume"
                     if st.button(tog,key=f"tg_{i}",use_container_width=True):
-                        alerts[i]["active"]=not a.get("active",True); st.session_state.alerts=alerts; st.rerun()
+                        alerts[i]["active"]=not a.get("active",True); st.session_state.alerts=alerts
+                        if is_authed(): save_alerts_to_file(st.session_state.user["email"], alerts)
+                        st.rerun()
                 with ac3:
                     if st.button("🗑",key=f"da_{i}",use_container_width=True):
-                        alerts.pop(i); st.session_state.alerts=alerts; st.rerun()
+                        alerts.pop(i); st.session_state.alerts=alerts
+                        if is_authed(): save_alerts_to_file(st.session_state.user["email"], alerts)
+                        st.rerun()
         else:
             st.caption("No alerts yet.")
 
@@ -3043,6 +3089,7 @@ def page_settings():
                     if st.form_submit_button("Save Telegram",type="primary"):
                         uemail=st.session_state.user["email"]
                         st.session_state.users_db[uemail]["telegram_chat_id"]=tg_id.strip()
+                        save_user_to_file(uemail, st.session_state.users_db[uemail])
                         st.success("✅ Telegram connected!")
         if not is_premium():
             st.markdown(f'<div class="card card-gold" style="margin-top:12px;"><div style="font-size:12px;font-weight:700;color:{GOLD};margin-bottom:4px;">👑 Premium Alert Channels</div><div style="font-size:12px;color:#374f6e;">Upgrade to Premium for instant Telegram alerts and real-time browser push notifications.</div></div>',unsafe_allow_html=True)
