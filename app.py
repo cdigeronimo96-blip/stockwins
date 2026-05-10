@@ -547,38 +547,38 @@ button[aria-label="👑 Upgrade to Premium"]:hover {{
 [data-testid="column"] .stButton>button{{flex:1;}}
 
 /* ── Download button styling ── */
-[data-testid="stDownloadButton"]>button{
+[data-testid="stDownloadButton"]>button{{
     background:rgba(37,99,235,0.1)!important;
     border:1px solid rgba(37,99,235,0.3)!important;
     color:#93b4fd!important;
     font-size:13px!important;font-weight:600!important;
     border-radius:8px!important;
     transition:all 0.2s!important;
-}
-[data-testid="stDownloadButton"]>button:hover{
+}}
+[data-testid="stDownloadButton"]>button:hover{{
     background:rgba(37,99,235,0.2)!important;
     border-color:#2563eb!important;
-}
+}}
 /* ── Tabs styling ── */
-[data-testid="stTabs"]>div>[role="tablist"]{
+[data-testid="stTabs"]>div>[role="tablist"]{{
     gap:4px!important;border-bottom:1px solid rgba(255,255,255,0.08)!important;
-}
-button[role="tab"]{
+}}
+button[role="tab"]{{
     font-size:13px!important;font-weight:500!important;
     padding:8px 16px!important;border-radius:6px 6px 0 0!important;
     color:#4a5e7a!important;
-}
-button[role="tab"][aria-selected="true"]{
+}}
+button[role="tab"][aria-selected="true"]{{
     color:#e2e8f0!important;font-weight:700!important;
     background:rgba(37,99,235,0.08)!important;
     border-bottom:2px solid #2563eb!important;
-}
+}}
 /* ── Expander styling ── */
-.streamlit-expanderHeader{
+.streamlit-expanderHeader{{
     font-size:13px!important;font-weight:600!important;color:#6b7fa0!important;
-}
+}}
 /* ── Success/error/info messages ── */
-[data-testid="stAlert"]{border-radius:10px!important;font-size:13px!important;}
+[data-testid="stAlert"]{{border-radius:10px!important;font-size:13px!important;}}
 /* ── Mobile & Tablet Responsive ── */
 @media (max-width:900px) {{
     /* Hero text */
