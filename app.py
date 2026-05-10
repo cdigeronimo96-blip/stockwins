@@ -9,6 +9,13 @@ import hashlib, time, random
 from datetime import datetime, timedelta
 
 try:
+    import io as _io
+    import xlsxwriter as _xlsxwriter
+    HAS_XLSX = True
+except ImportError:
+    HAS_XLSX = False
+
+try:
     import plotly.graph_objects as go
     import plotly.express as px
     HAS_PLOTLY = True
@@ -639,6 +646,101 @@ def go_back():
         st.rerun()
     else:
         nav("discover" if is_authed() else "landing")
+# ─────────────────────────────────────────────────────────────
+# EXCEL EXPORT
+# ─────────────────────────────────────────────────────────────
+def make_excel(rows: list, sheet_name: str = "StockWins Data") -> bytes:
+    """Build an Excel workbook from a list of dicts. Returns bytes."""
+    import io
+    try:
+        import xlsxwriter
+        buf = io.BytesIO()
+        wb = xlsxwriter.Workbook(buf, {"in_memory": True})
+        ws = wb.add_worksheet(sheet_name[:31])
+
+        # Formats
+        hdr_fmt = wb.add_format({"bold": True, "bg_color": "#0d1525", "font_color": "#60a5fa",
+                                  "border": 1, "border_color": "#1e3a5f", "font_size": 11})
+        pos_fmt = wb.add_format({"font_color": "#22c55e", "font_size": 10})
+        neg_fmt = wb.add_format({"font_color": "#ef4444", "font_size": 10})
+        num_fmt = wb.add_format({"num_format": "$#,##0.00", "font_size": 10})
+        pct_fmt = wb.add_format({"num_format": "0.00%", "font_size": 10})
+        def_fmt = wb.add_format({"font_size": 10})
+        gold_fmt = wb.add_format({"font_color": "#f59e0b", "font_size": 10, "bold": True})
+
+        if not rows:
+            wb.close()
+            return buf.getvalue()
+
+        headers = list(rows[0].keys())
+        col_widths = {h: max(len(str(h)), 8) for h in headers}
+
+        # Write headers
+        for ci, h in enumerate(headers):
+            ws.write(0, ci, h, hdr_fmt)
+
+        # Write data rows
+        for ri, row in enumerate(rows, 1):
+            for ci, h in enumerate(headers):
+                val = row.get(h, "")
+                w = max(col_widths[h], len(str(val)))
+                col_widths[h] = min(w, 40)
+                # Choose format based on content
+                if isinstance(val, (int, float)):
+                    fmt = num_fmt if h.lower() in ("price","open","high","low","close") else def_fmt
+                    ws.write_number(ri, ci, val, fmt)
+                elif isinstance(val, str) and val.startswith("+"):
+                    ws.write(ri, ci, val, pos_fmt)
+                elif isinstance(val, str) and val.startswith("-"):
+                    ws.write(ri, ci, val, neg_fmt)
+                elif isinstance(val, str) and ("BUY" in val or "STRONG" in val):
+                    ws.write(ri, ci, val, gold_fmt)
+                else:
+                    ws.write(ri, ci, val, def_fmt)
+
+        # Set column widths
+        for ci, h in enumerate(headers):
+            ws.set_column(ci, ci, col_widths[h] + 2)
+
+        # Add auto-filter
+        ws.autofilter(0, 0, len(rows), len(headers) - 1)
+        ws.freeze_panes(1, 0)
+
+        wb.close()
+        return buf.getvalue()
+
+    except Exception as e:
+        # Fallback to CSV bytes if xlsxwriter fails
+        import io
+        buf = io.StringIO()
+        if rows:
+            import csv
+            w = csv.DictWriter(buf, fieldnames=rows[0].keys())
+            w.writeheader()
+            w.writerows(rows)
+        return buf.getvalue().encode()
+
+def export_button(rows: list, filename: str, label: str = "📥 Export to Excel", key: str = "export"):
+    """Render a download button for Excel export."""
+    if not rows:
+        st.info("No data to export.")
+        return
+    try:
+        data = make_excel(rows, filename.replace(".xlsx","")[:31])
+        mime = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        ext = ".xlsx"
+    except:
+        import io
+        buf = io.StringIO()
+        import csv
+        w = csv.DictWriter(buf, fieldnames=rows[0].keys())
+        w.writeheader(); w.writerows(rows)
+        data = buf.getvalue().encode(); mime = "text/csv"; ext = ".csv"
+    st.download_button(label=label, data=data,
+                       file_name=filename.replace(".xlsx", ext),
+                       mime=mime, key=key, use_container_width=True)
+
+
 
 # ─────────────────────────────────────────────────────────────
 # DATA
@@ -1112,6 +1214,15 @@ NAV_CSS = """<style>
 .element-container:has(.sw-logo-click-target)+.element-container{height:0px !important;overflow:visible !important;margin:0 !important;padding:0 !important;}
 .element-container:has(.sw-logo-click-target)+.element-container .stButton>button{position:relative !important;top:-44px !important;left:0 !important;width:180px !important;height:44px !important;min-height:44px !important;opacity:0 !important;cursor:pointer !important;z-index:999 !important;background:transparent !important;border:none !important;box-shadow:none !important;}
 .sw-divider{border:none;border-top:1px solid rgba(255,255,255,0.06);margin:0 0 24px 0;}
+/* Pusher toast notification */
+#sw-push-toast{position:fixed;top:80px;right:20px;z-index:9999;display:none;
+  background:#0d1525;border:1px solid rgba(37,99,235,0.5);border-radius:12px;
+  padding:14px 18px;box-shadow:0 8px 32px rgba(37,99,235,0.3);
+  min-width:280px;max-width:360px;animation:slideIn 0.3s ease;}
+@keyframes slideIn{from{transform:translateX(120%);opacity:0;}to{transform:translateX(0);opacity:1;}}
+#sw-push-toast .toast-ticker{font-family:'JetBrains Mono',monospace;font-size:16px;font-weight:800;color:#60a5fa;}
+#sw-push-toast .toast-msg{font-size:12px;color:#374f6e;margin-top:4px;line-height:1.5;}
+#sw-push-toast .toast-close{position:absolute;top:8px;right:12px;cursor:pointer;color:#4a5e7a;font-size:16px;}
 [data-testid="stMainBlockContainer"] [data-testid="stHorizontalBlock"]:first-of-type{align-items:center !important;min-height:56px !important;}
 [data-testid="stMainBlockContainer"] [data-testid="stHorizontalBlock"]:first-of-type>[data-testid="column"]{display:flex !important;align-items:center !important;padding-top:0 !important;padding-bottom:0 !important;}
 [data-testid="stMainBlockContainer"] [data-testid="stHorizontalBlock"]:first-of-type>[data-testid="column"]>div{width:100% !important;}
@@ -2274,6 +2385,11 @@ def page_bi():
                 fig=go.Figure(go.Bar(x=[m["vr"] for m in top10v],y=[m["t"] for m in top10v],orientation="h",marker_color=colors_v,text=[f"{m['vr']:.1f}×" for m in top10v],textposition="outside",textfont=dict(size=13,family="JetBrains Mono")))
                 fig.update_layout(**CHART_LAYOUT); st.plotly_chart(fig,use_container_width=True)
 
+    # Export leaderboard data
+    if movers:
+        bi_export_rows=[{"Ticker":m["t"],"Price":f"${m['price']:,.2f}","Change %":f"{m['pct']:+.2f}%","Volume":f"{m['vol']:,}","Vol Ratio":f"{m['vr']:.1f}×"} for m in sorted(movers,key=lambda x:x["pct"],reverse=True)]
+        export_button(bi_export_rows,"stockwins_bi_leaderboard.xlsx","📥 Export Leaderboard","bi_export")
+
     with tabs[1]:
         sec_sorted=sorted(secs.items(),key=lambda x:x[1],reverse=True)
         if HAS_PLOTLY:
@@ -2448,6 +2564,11 @@ def page_watchlist():
 
     # Stock rows
     display_rows=[{k:v for k,v in r.items() if not k.startswith("_")} for r in rows]
+    # Export button
+    ex1,ex2=st.columns([1,3])
+    with ex1:
+        export_button(display_rows, "stockwins_watchlist.xlsx", "📥 Export Watchlist", "wl_export")
+
     st.dataframe(pd.DataFrame(display_rows),use_container_width=True,hide_index=True)
 
     # Quick actions
@@ -2530,7 +2651,11 @@ def page_screener():
         prog.empty()
         if results:
             st.success(f"✅ {len(results)} stocks passed your filters!")
-            st.dataframe(pd.DataFrame(results).sort_values("Score",ascending=False),use_container_width=True,hide_index=True)
+            sorted_results = pd.DataFrame(results).sort_values("Score",ascending=False)
+            sc_ex1,sc_ex2=st.columns([1,3])
+            with sc_ex1:
+                export_button(sorted_results.to_dict("records"), "stockwins_screener.xlsx", "📥 Export Results", "scr_export")
+            st.dataframe(sorted_results,use_container_width=True,hide_index=True)
         else: st.info("No matches. Try relaxing filters.")
     st.markdown('</div>',unsafe_allow_html=True)
 
@@ -2852,19 +2977,75 @@ def page_settings():
 
     with tabs[2]:
         alerts=st.session_state.get("alerts",[])
-        with st.form("af"):
-            ac1,ac2,ac3=st.columns(3)
-            with ac1: at=st.text_input("Ticker",placeholder="AAPL",label_visibility="visible").upper()
-            with ac2: ap=st.number_input("Price",value=100.0,min_value=0.01,label_visibility="visible")
-            with ac3: atype=st.selectbox("Type",["Price Above","Price Below"],label_visibility="visible")
-            if st.form_submit_button("➕ Add Alert",type="primary") and at:
-                alerts.append({"ticker":at,"price":ap,"type":atype,"active":True}); st.session_state.alerts=alerts; st.success("Alert set!")
-        for i,a in enumerate(alerts):
-            ac1,ac2=st.columns([4,1])
-            with ac1: st.markdown(f'<div class="card" style="padding:10px 14px;margin-bottom:4px;"><span style="font-family:\'JetBrains Mono\',monospace;color:#60a5fa;font-weight:700;">{a["ticker"]}</span> <span style="font-size:12px;color:#374f6e;">{a["type"]} ${a["price"]:.2f}</span></div>',unsafe_allow_html=True)
-            with ac2:
-                if st.button("🗑",key=f"da_{i}"): alerts.pop(i); st.session_state.alerts=alerts; st.rerun()
-        if not alerts: st.caption("No active alerts.")
+        st.markdown(f'<div style="font-size:15px;font-weight:700;color:#e2e8f0;margin-bottom:12px;">🔔 Price & Signal Alerts</div>',unsafe_allow_html=True)
+
+        with st.form("af",clear_on_submit=True):
+            fc1,fc2,fc3=st.columns(3)
+            with fc1: at=st.text_input("Ticker",placeholder="AAPL",label_visibility="visible").upper().strip()
+            with fc2:
+                atype_lbl=st.selectbox("Alert Type",["Price Above","Price Below","% Change Up",
+                    "Volume Spike (×avg)","RSI Oversold (<30)","RSI Overbought (>70)","Sentiment Bullish %"],label_visibility="visible")
+            with fc3: ap=st.number_input("Threshold",value=100.0,min_value=0.0,step=0.5,label_visibility="visible")
+            ch_col1,ch_col2,ch_col3=st.columns(3)
+            with ch_col1: ch_email=st.checkbox("📧 Email",value=True)
+            with ch_col2: ch_tg=st.checkbox("✈️ Telegram",value=False,disabled=not is_premium(),help="Premium only")
+            with ch_col3: ch_push=st.checkbox("🔔 Browser Push",value=False,disabled=not is_premium(),help="Premium only")
+            if st.form_submit_button("➕ Add Alert",type="primary",use_container_width=True) and at:
+                type_map={"Price Above":"price_above","Price Below":"price_below","% Change Up":"pct_change",
+                          "Volume Spike (×avg)":"volume_spike","RSI Oversold (<30)":"rsi_oversold",
+                          "RSI Overbought (>70)":"rsi_overbought","Sentiment Bullish %":"sentiment_flip"}
+                channels=[]
+                if ch_email: channels.append("email")
+                if ch_tg and is_premium(): channels.append("telegram")
+                if ch_push and is_premium(): channels.append("browser")
+                new_a={"id":f"{at}_{time.time():.0f}","ticker":at,"type":type_map.get(atype_lbl,"price_above"),
+                       "threshold":ap,"label":f"{at} {atype_lbl} {ap}","channels":channels or ["email"],
+                       "active":True,"created":datetime.now().strftime("%Y-%m-%d %H:%M")}
+                alerts.append(new_a); st.session_state.alerts=alerts
+                st.success(f"✅ Alert set: {at} {atype_lbl} {ap}")
+
+        if alerts:
+            st.caption(f"{len(alerts)} active alert{'s' if len(alerts)!=1 else ''}")
+            for i,a in enumerate(alerts):
+                ac1,ac2,ac3=st.columns([5,1,1])
+                with ac1:
+                    ticker=a.get("ticker",""); lbl=a.get("label",ticker)
+                    chs=", ".join(["📧" if c=="email" else "✈️" if c=="telegram" else "🔔" for c in a.get("channels",["email"])])
+                    dot=f'<span style="color:{"#4ade80" if a.get("active",True) else "#4a5e7a"};">●</span>'
+                    st.markdown(f'<div class="card" style="padding:9px 14px;margin-bottom:4px;">{dot} <span style="font-family:\'JetBrains Mono\',monospace;color:#60a5fa;font-weight:700;">{ticker}</span> <span style="font-size:12px;color:#374f6e;margin-left:8px;">{lbl}</span><span style="font-size:11px;color:#2a3a52;float:right;">{chs}</span></div>',unsafe_allow_html=True)
+                with ac2:
+                    tog="Pause" if a.get("active",True) else "Resume"
+                    if st.button(tog,key=f"tg_{i}",use_container_width=True):
+                        alerts[i]["active"]=not a.get("active",True); st.session_state.alerts=alerts; st.rerun()
+                with ac3:
+                    if st.button("🗑",key=f"da_{i}",use_container_width=True):
+                        alerts.pop(i); st.session_state.alerts=alerts; st.rerun()
+        else:
+            st.caption("No alerts yet.")
+
+        # Telegram setup for premium
+        if is_premium():
+            st.markdown('<div class="div-line"></div>',unsafe_allow_html=True)
+            st.markdown('<div style="font-size:13px;font-weight:700;color:#e2e8f0;margin-bottom:8px;">✈️ Telegram Setup</div>',unsafe_allow_html=True)
+            try: tg_token_set = bool(st.secrets.get("TELEGRAM_BOT_TOKEN",""))
+            except: tg_token_set = False
+            db_user2=st.session_state.users_db.get(st.session_state.user["email"],{}) if is_authed() else {}
+            current_tg=db_user2.get("telegram_chat_id","")
+            if not tg_token_set:
+                st.markdown(f'<div class="card" style="font-size:12px;color:#374f6e;">Add <code>TELEGRAM_BOT_TOKEN</code> to Streamlit Secrets to enable Telegram alerts.</div>',unsafe_allow_html=True)
+            else:
+                if current_tg:
+                    st.markdown(f'<div style="font-size:12px;color:#4ade80;margin-bottom:8px;">✅ Telegram connected (ID: {current_tg})</div>',unsafe_allow_html=True)
+                else:
+                    st.markdown(f'<div style="font-size:12px;color:#374f6e;line-height:1.8;margin-bottom:8px;">1. Open Telegram → search <strong style="color:#e2e8f0;">@StockWinsBot</strong><br>2. Send /start to get your Chat ID<br>3. Paste it below</div>',unsafe_allow_html=True)
+                with st.form("tg_form"):
+                    tg_id=st.text_input("Your Telegram Chat ID",value=current_tg,placeholder="1234567890",label_visibility="visible")
+                    if st.form_submit_button("Save Telegram",type="primary"):
+                        uemail=st.session_state.user["email"]
+                        st.session_state.users_db[uemail]["telegram_chat_id"]=tg_id.strip()
+                        st.success("✅ Telegram connected!")
+        if not is_premium():
+            st.markdown(f'<div class="card card-gold" style="margin-top:12px;"><div style="font-size:12px;font-weight:700;color:{GOLD};margin-bottom:4px;">👑 Premium Alert Channels</div><div style="font-size:12px;color:#374f6e;">Upgrade to Premium for instant Telegram alerts and real-time browser push notifications.</div></div>',unsafe_allow_html=True)
 
     with tabs[3]:
         st.markdown('<div class="sec-hd" style="font-size:13px;">📧 Email Digest Settings</div>',unsafe_allow_html=True)
