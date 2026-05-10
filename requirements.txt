@@ -5,3 +5,4 @@ ta
 yfinance
 plotly
 stripe>=5.0.0,<7.0.0
+xlsxwriter
