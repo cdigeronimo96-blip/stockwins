@@ -79,6 +79,7 @@ def save_user_to_file(email, user_data):
         "telegram_chat_id": user_data.get("telegram_chat_id", ""),
         "watchlist":        user_data.get("watchlist", []),
         "digest_prefs":     user_data.get("digest_prefs", {}),
+        "category_alerts":  user_data.get("category_alerts", []),
     }
     _write_json(USERS_DB_PATH, db)
 
@@ -141,7 +142,8 @@ def create_checkout_session(plan, user_email):
 
     # Validate key format
     if not (key.startswith("sk_test_") or key.startswith("sk_live_")):
-        return None, f"STRIPE_SECRET_KEY must start with sk_test_ or sk_live_. Got: {key[:14]}..."
+        return None, (f"STRIPE_SECRET_KEY must start with sk_test_ or sk_live_. "
+                      f"Got: {key[:12]}... — Make sure it's the Secret Key, not the Publishable Key (pk_test_)")
 
     # Get and validate price ID
     price_key = "STRIPE_PRICE_MONTHLY" if plan == "premium" else "STRIPE_PRICE_ANNUAL"
@@ -230,11 +232,14 @@ def handle_payment_return():
             if v_plan:
                 if is_authed():
                     e = st.session_state.user["email"]
-                    st.session_state.users_db[e]["role"]="premium" if v_plan=="premium" else "premium"
-                    st.session_state.users_db[e]["plan"]="Monthly" if v_plan=="premium" else "Annual"
-                    st.session_state.role = v_plan if v_plan=="annual" else "premium"
-                    # Annual users still get premium features
-                    if v_plan=="annual": st.session_state.role="premium"
+                    # Both premium and annual get premium role
+                    new_role = "premium"
+                    new_plan = "Monthly" if v_plan=="premium" else "Annual"
+                    st.session_state.users_db[e]["role"] = new_role
+                    st.session_state.users_db[e]["plan"] = new_plan
+                    st.session_state.role = new_role
+                    _save_global_db(st.session_state.users_db)
+                    save_user_to_file(e, st.session_state.users_db[e])
                 st.session_state["_pay_success"] = v_plan
             else:
                 st.session_state["_pay_error"] = v_info
@@ -299,16 +304,19 @@ section.main>div{{padding-top:0 !important;}}
 /* ── Base Button ── */
 .stButton>button{{
     background:rgba(255,255,255,0.05) !important;
-    border:1px solid rgba(255,255,255,0.18) !important;
+    border:1px solid rgba(255,255,255,0.16) !important;
     color:#b8cce0 !important;
     border-radius:8px !important;
     font-family:'Inter',sans-serif !important;
     font-size:13px !important;font-weight:500 !important;
     padding:8px 16px !important;
     min-height:40px !important;
-    transition:all 0.15s ease !important;
+    transition:all 0.18s ease !important;
     width:100% !important;
     display:flex !important;align-items:center !important;justify-content:center !important;
+    -webkit-font-smoothing:antialiased !important;
+    text-rendering:optimizeLegibility !important;
+    letter-spacing:0.1px !important;
 }}
 .stButton>button:hover{{
     background:rgba(37,99,235,0.12) !important;
@@ -538,6 +546,39 @@ button[aria-label="👑 Upgrade to Premium"]:hover {{
 [data-testid="column"] .stButton{{display:flex;}}
 [data-testid="column"] .stButton>button{{flex:1;}}
 
+/* ── Download button styling ── */
+[data-testid="stDownloadButton"]>button{
+    background:rgba(37,99,235,0.1)!important;
+    border:1px solid rgba(37,99,235,0.3)!important;
+    color:#93b4fd!important;
+    font-size:13px!important;font-weight:600!important;
+    border-radius:8px!important;
+    transition:all 0.2s!important;
+}
+[data-testid="stDownloadButton"]>button:hover{
+    background:rgba(37,99,235,0.2)!important;
+    border-color:#2563eb!important;
+}
+/* ── Tabs styling ── */
+[data-testid="stTabs"]>div>[role="tablist"]{
+    gap:4px!important;border-bottom:1px solid rgba(255,255,255,0.08)!important;
+}
+button[role="tab"]{
+    font-size:13px!important;font-weight:500!important;
+    padding:8px 16px!important;border-radius:6px 6px 0 0!important;
+    color:#4a5e7a!important;
+}
+button[role="tab"][aria-selected="true"]{
+    color:#e2e8f0!important;font-weight:700!important;
+    background:rgba(37,99,235,0.08)!important;
+    border-bottom:2px solid #2563eb!important;
+}
+/* ── Expander styling ── */
+.streamlit-expanderHeader{
+    font-size:13px!important;font-weight:600!important;color:#6b7fa0!important;
+}
+/* ── Success/error/info messages ── */
+[data-testid="stAlert"]{border-radius:10px!important;font-size:13px!important;}
 /* ── Mobile & Tablet Responsive ── */
 @media (max-width:900px) {{
     /* Hero text */
@@ -618,7 +659,7 @@ def init():
     st.session_state.initialized=True
     st.session_state.update({
         "page":"landing","user":None,"role":"guest",
-        "watchlist":[],"saved_screeners":[],
+        "watchlist":[],"alerts":[],"saved_screeners":[],
         "detail_ticker":None,"detail_data":{},"discover_cat":"🔥💥 Squeeze + Buzz",
         "prev_page":None,"hero_panel":0,"_page_hist":[],
         "users_db":_get_global_db(),
@@ -655,7 +696,13 @@ def signup(email, pw, name):
     return True,""
 
 def logout():
-    for k in ["user","role","watchlist","alerts"]: st.session_state.pop(k,None)
+    keys_to_clear = ["user","role","watchlist","alerts","saved_screeners","sel_plan",
+                     "support_chat","_page_hist","prev_page","detail_ticker","detail_data",
+                     "_redirect_url","_pay_success","_pay_error","_pay_cancelled",
+                     "_login_welcome","_signup_success"]
+    for k in keys_to_clear:
+        st.session_state.pop(k, None)
+    st.session_state["_logged_out"] = True
     nav("landing")
 
 def is_owner():   return st.session_state.get("role")=="owner"
@@ -1234,18 +1281,37 @@ def render_cat(cat,limit=10,show_why=False):
             if q: stocks.append({"t":t,"q":q,"sc":sc,"bd":bd,"ig":ig,"op":op,"risk":risk,"conf":conf,"hot":t in hot,"df":df,"info":info,"sent":sent,"comp":sc,"why":""})
         prog.empty()
         stocks.sort(key=lambda x:x["sc"],reverse=True)
-    if not stocks: st.info(f"No stocks matching criteria right now."); return
+    if not stocks:
+        st.markdown('''<div style="background:#0d1525;border:1px solid rgba(255,255,255,0.08);
+                           border-radius:10px;padding:32px;text-align:center;">
+            <div style="font-size:24px;margin-bottom:10px;">🔍</div>
+            <div style="font-size:15px;font-weight:700;color:#e2e8f0;margin-bottom:6px;">No stocks matching right now</div>
+            <div style="font-size:13px;color:#374f6e;">Market conditions may not meet this category's criteria at the moment. Check back in 15 minutes.</div>
+        </div>''', unsafe_allow_html=True)
+        return
     for s in stocks: render_sr(s,cat.replace(" ","_").replace("+","p").replace("→","r"),show_why=is_comp)
 
 def render_lock(name=""):
-    st.markdown(f"""<div class="lock">
-        <div style="font-size:28px;margin-bottom:10px;">🔒</div>
-        <div style="font-size:17px;font-weight:800;color:#e2e8f0;margin-bottom:6px;">{name} — Premium</div>
-        <div style="font-size:13px;color:#374f6e;margin-bottom:18px;">Upgrade to unlock all premium composite categories, squeeze scanner, advanced screener, and full BI analytics.</div>
+    st.markdown(f"""<div style="background:linear-gradient(135deg,#120d00,#0d1525);
+        border:1px solid rgba(245,158,11,0.3);border-radius:14px;padding:40px 32px;text-align:center;">
+        <div style="font-size:36px;margin-bottom:14px;">👑</div>
+        <div style="font-size:20px;font-weight:800;color:#e2e8f0;margin-bottom:8px;">{name}</div>
+        <div style="display:inline-block;background:rgba(245,158,11,0.1);color:{GOLD};
+                    font-size:10px;font-weight:700;padding:3px 12px;border-radius:20px;
+                    border:1px solid rgba(245,158,11,0.3);margin-bottom:14px;">PREMIUM FEATURE</div>
+        <div style="font-size:13px;color:#374f6e;margin-bottom:6px;line-height:1.7;">
+            Upgrade to Premium to unlock this composite category and 9 others,<br>
+            plus the short squeeze scanner, advanced screener, full BI analytics, and unlimited alerts.
+        </div>
+        <div style="font-size:12px;color:#2a3a52;margin-bottom:20px;">Starting at $29/month · Cancel anytime · No contracts</div>
     </div>""", unsafe_allow_html=True)
-    st.markdown('<div style="max-width:280px;margin:14px auto 0;">', unsafe_allow_html=True)
-    if gold_btn("Unlock Premium", f"lock_{name[:20].replace(' ','_')}"): nav("pricing")
-    st.markdown('</div>', unsafe_allow_html=True)
+    st.markdown("<br>", unsafe_allow_html=True)
+    _,lc,_=st.columns([1,2,1])
+    with lc:
+        if gold_btn("👑 Unlock Premium", f"lock_{name[:20].replace(' ','_')}"): nav("pricing")
+        st.markdown("<br>", unsafe_allow_html=True)
+        if is_authed() and st.button("Already subscribed? Refresh →", key=f"lock_ref_{name[:10]}", use_container_width=True):
+            st.rerun()
 
 # ─────────────────────────────────────────────────────────────
 # NAV CSS + TOPBAR
@@ -1302,9 +1368,9 @@ def render_topbar(active=""):
             uc1,uc2,uc3=st.columns([4,1,1])
             with uc1: st.markdown(f'<div style="font-size:12px;color:#6b7fa0;white-space:nowrap;">{ri} {st.session_state.user["name"]}</div>',unsafe_allow_html=True)
             with uc2:
-                if st.button("⚙️",key="top_set"): nav("settings")
+                if st.button("⚙️",key="top_set",help="Account settings"): nav("settings")
             with uc3:
-                if st.button("↩️",key="top_out"): logout()
+                if st.button("↩️",key="top_out",help="Log out"): logout()
     else:
         c1,_,c3=st.columns([2,5,4])
         with c1: render_logo_click("top_logo","landing")
@@ -1345,7 +1411,7 @@ def render_sidebar():
                 if st.button(cat,key=f"sb_s_{cat[:20].replace(' ','_')}",use_container_width=True):
                     st.session_state.discover_cat=cat; nav("discover")
             st.markdown('<div style="font-size:10px;font-weight:700;color:rgba(255,255,255,.2);letter-spacing:1.5px;text-transform:uppercase;padding:12px 18px 5px;">Tools</div>',unsafe_allow_html=True)
-            for icon,label,pg in [("📊","Dashboard","dashboard"),("⭐","Watchlist","watchlist"),("🔍","Screener","screener"),("📈","BI Analytics","bi_dashboard"),("💰","Pricing","pricing")]:
+            for icon,label,pg in [("📊","Dashboard","dashboard"),("⭐","Watchlist","watchlist"),("🔍","Screener","screener"),("📈","BI Analytics","bi_dashboard"),("💰","Pricing","pricing"),("🔔","Alerts & Settings","settings"),("💬","Contact & Help","contact")]:
                 if st.button(f"{icon} {label}",key=f"sb_{pg}",use_container_width=True): nav(pg)
             if is_admin():
                 st.markdown('<div style="font-size:10px;font-weight:700;color:rgba(255,255,255,.2);letter-spacing:1.5px;text-transform:uppercase;padding:12px 18px 5px;">Admin</div>',unsafe_allow_html=True)
@@ -1356,7 +1422,15 @@ def render_sidebar():
                 if gold_btn("Go Premium","sb_gold"): nav("pricing")
                 st.markdown('</div>', unsafe_allow_html=True)
             ri={"owner":"👑","admin":"🛡️","premium":"⭐","free":"👤"}.get(st.session_state.role,"👤")
-            st.markdown(f'<div style="padding:4px 18px;font-size:12px;color:#374f6e;">{ri} {st.session_state.user["name"]}</div>',unsafe_allow_html=True)
+            role_color={"owner":GOLD,"admin":"#93b4fd","premium":"#a78bfa","free":"#4a5e7a"}.get(st.session_state.role,"#4a5e7a")
+            plan_label={"owner":"Owner","admin":"Admin","premium":"Premium ⭐","free":"Free Plan"}.get(st.session_state.role,"Free")
+            db_sb = st.session_state.users_db.get(st.session_state.user.get("email",""),{})
+            verified = db_sb.get("verified",False)
+            v_badge = ' <span style="color:#4ade80;font-size:9px;">✓ verified</span>' if verified else ''
+            st.markdown(f'''<div style="padding:8px 14px;background:rgba(255,255,255,0.03);border-top:1px solid rgba(255,255,255,0.06);margin-top:4px;">
+                <div style="font-size:12px;font-weight:600;color:{role_color};">{ri} {st.session_state.user["name"]}{v_badge}</div>
+                <div style="font-size:10px;color:#2a3a52;margin-top:2px;">{plan_label}</div>
+            </div>''',unsafe_allow_html=True)
             if st.button("Log Out",key="sb_logout",use_container_width=True): logout()
         else:
             st.markdown('<div style="padding:12px 18px;font-size:12px;color:#374f6e;margin-bottom:8px;">Sign in to access the full dashboard.</div>',unsafe_allow_html=True)
@@ -1824,6 +1898,29 @@ def page_landing():
 def page_features():
     render_topbar()
     st.markdown('<div class="pg">',unsafe_allow_html=True)
+    # CTA strip at top
+    if not is_premium() and is_authed():
+        st.markdown(f"""
+        <div style="background:linear-gradient(135deg,#1a0d00,#0d1525);border:1px solid rgba(245,158,11,0.25);
+                    border-radius:12px;padding:14px 20px;margin-bottom:20px;
+                    display:flex;align-items:center;justify-content:space-between;">
+            <div>
+                <div style="font-size:14px;font-weight:700;color:{GOLD};">👑 Upgrade to unlock all premium features</div>
+                <div style="font-size:12px;color:#374f6e;margin-top:2px;">All 17 categories · Squeeze scanner · BI Analytics · Unlimited alerts</div>
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
+        if gold_btn("Unlock Premium — $29/mo", "feat_top_prem"): nav("pricing")
+        st.markdown("<br>", unsafe_allow_html=True)
+    elif not is_authed():
+        st.markdown(f"""
+        <div style="background:#0d1525;border:1px solid rgba(37,99,235,0.25);border-radius:12px;
+                    padding:14px 20px;margin-bottom:20px;">
+            <div style="font-size:14px;font-weight:700;color:#e2e8f0;">🚀 Start free — no credit card required</div>
+            <div style="font-size:12px;color:#374f6e;margin-top:2px;">Create an account in 60 seconds and start discovering trading opportunities immediately.</div>
+        </div>
+        """, unsafe_allow_html=True)
+
     st.markdown(f"""
     <div style="text-align:center;padding:40px 0 32px;">
         <div style="font-size:11px;font-weight:700;color:{BLUE};letter-spacing:2px;text-transform:uppercase;margin-bottom:12px;">Full Platform Overview</div>
@@ -1872,6 +1969,7 @@ def page_features():
         st.markdown("<br>",unsafe_allow_html=True)
         if gold_btn("Go Premium","feat_prem"): nav("pricing")
     st.markdown('</div>',unsafe_allow_html=True)
+    render_footer()
 
 # ─────────────────────────────────────────────────────────────
 # AUTH PAGES
@@ -1886,7 +1984,9 @@ def page_login():
             pw=st.text_input("Password",type="password",label_visibility="visible")
             if st.form_submit_button("Sign In →",type="primary",use_container_width=True):
                 if not email or not pw: st.error("Please enter your email and password.")
-                elif login(email,pw): nav("dashboard")
+                elif login(email,pw):
+                    st.session_state["_login_welcome"] = st.session_state.user.get("name","")
+                    nav("dashboard")
                 else: st.error("Invalid email or password.")
 
         # Show hints based on whether secrets are configured
@@ -1949,8 +2049,15 @@ def page_forgot():
             email=st.text_input("Email address",placeholder="you@example.com")
             if st.form_submit_button("Send Reset Link →",type="primary",use_container_width=True):
                 if email in st.session_state.users_db:
-                    st.success("✅ Reset link sent! (Simulated in demo)")
-                    time.sleep(1); nav("login")
+                    st.markdown("""
+                    <div style="background:#04200d;border:1px solid rgba(34,197,94,0.3);
+                                border-radius:10px;padding:16px;text-align:center;margin-top:8px;">
+                        <div style="font-size:24px;margin-bottom:8px;">📧</div>
+                        <div style="font-size:14px;font-weight:700;color:#4ade80;margin-bottom:4px;">Reset Link Sent!</div>
+                        <div style="font-size:12px;color:#374f6e;">Check your inbox and follow the link to reset your password.</div>
+                    </div>
+                    """, unsafe_allow_html=True)
+                    time.sleep(2); nav("login")
                 else: st.error("No account found.")
         if st.button("← Back to Login",key="f2l",use_container_width=True): nav("login")
 
@@ -1960,6 +2067,17 @@ def page_forgot():
 def page_dashboard():
     render_topbar("dashboard")
     st.markdown('<div class="pg">',unsafe_allow_html=True)
+
+    # ── Premium status strip ──
+    if is_premium():
+        role_lbl = {"owner":"👑 Owner","admin":"🛡️ Admin","premium":"⭐ Premium"}.get(st.session_state.get("role","free"),"⭐ Premium")
+        st.markdown(f'''<div style="background:linear-gradient(135deg,#1a0d00,#0d1525);
+            border:1px solid rgba(245,158,11,0.2);border-radius:10px;
+            padding:10px 16px;margin-bottom:14px;
+            display:flex;align-items:center;justify-content:space-between;">
+            <div style="font-size:13px;font-weight:700;color:{GOLD};">{role_lbl} — All features unlocked</div>
+            <div style="font-size:11px;color:#374f6e;">17 categories · Squeeze scanner · BI Analytics · Full alerts</div>
+        </div>''', unsafe_allow_html=True)
 
     # ── Our Composite Categories FIRST (the hero) ──
     st.markdown(f"""
@@ -2103,6 +2221,9 @@ def page_discover():
         tier_str = f'<span style="background:{"rgba(245,158,11,.12)" if tier=="premium" else "rgba(34,197,94,.1)"};color:{tier_clr};font-size:9px;font-weight:700;padding:3px 9px;border-radius:20px;border:1px solid {"rgba(245,158,11,.3)" if tier=="premium" else "rgba(34,197,94,.3)"};margin-left:10px;">{tier_lbl}</span>'
     desc_str = COMPOSITE_CATS[sel][0] if is_comp else f"Browse all {sel} stocks"
     is_locked = is_comp and COMPOSITE_CATS.get(sel,("",None))[1]=="premium" and not is_premium()
+    if is_locked and not is_authed():
+        # Guest trying to access premium - prompt login too
+        pass
 
     st.markdown(f"""
     <div style="background:#080b14;border-bottom:1px solid {BORDER};padding:14px 24px;margin:-1px 0 0;">
@@ -2160,8 +2281,23 @@ def page_detail():
     data=st.session_state.get("detail_data",{})
 
     # ── Back button ──
-    if st.button("← Back",key="back_det"):
-        go_back()
+    bc1, bc2, _ = st.columns([1,1,5])
+    with bc1:
+        if st.button("← Back", key="back_det", use_container_width=True):
+            go_back()
+    with bc2:
+        ticker_for_wl = st.session_state.get("detail_ticker","")
+        wl = st.session_state.get("watchlist",[])
+        in_wl = ticker_for_wl in wl
+        if st.button("✅ Watching" if in_wl else "➕ Watchlist", key="top_wl_det", use_container_width=True):
+            if in_wl: wl.remove(ticker_for_wl)
+            else: wl.append(ticker_for_wl)
+            st.session_state.watchlist = wl
+            if is_authed():
+                db = st.session_state.users_db.get(st.session_state.user["email"],{})
+                db["watchlist"] = wl
+                save_user_to_file(st.session_state.user["email"], db)
+            st.rerun()
     if not ticker: st.warning("No stock selected."); return
 
     q=data.get("q") or get_quote(ticker)
@@ -2360,6 +2496,7 @@ def page_detail():
 def page_bi():
     render_topbar("bi_dashboard")
     st.markdown('<div class="pg">',unsafe_allow_html=True)
+    if st.button("← Back", key="bi_back"): go_back()
 
     # ── Page intro ──
     st.markdown(f"""
@@ -2516,7 +2653,11 @@ def page_bi():
     wl=st.session_state.get("watchlist",[])
     if not wl:
         st.markdown('<div class="card" style="text-align:center;padding:40px;"><div style="font-size:28px;margin-bottom:10px;">📋</div><div style="font-size:15px;font-weight:700;color:#e2e8f0;margin-bottom:6px;">Watchlist is empty</div><div style="font-size:13px;color:#374f6e;">Browse categories and click ➕ Watchlist on any stock.</div></div>',unsafe_allow_html=True)
-        if st.button("Browse Stocks →",key="wl_browse",type="primary"): nav("discover")
+        wl_c1, wl_c2 = st.columns(2, gap="small")
+        with wl_c1:
+            if st.button("Browse Stocks →",key="wl_browse",type="primary",use_container_width=True): nav("discover")
+        with wl_c2:
+            if st.button("View Dashboard",key="wl_browse2",use_container_width=True): nav("dashboard")
         st.markdown('</div>',unsafe_allow_html=True); return
 
     st.caption(f"{len(wl)} stocks")
@@ -2547,6 +2688,7 @@ def page_watchlist():
     st.markdown('<div class="pg">',unsafe_allow_html=True)
 
     wl=st.session_state.get("watchlist",[])
+    if st.button("← Back", key="wl_back"): go_back()
     hdr1,hdr2=st.columns([3,1])
     with hdr1: st.markdown('<div style="font-size:22px;font-weight:800;color:#e2e8f0;margin-bottom:4px;">⭐ My Watchlist</div>',unsafe_allow_html=True)
     with hdr2:
@@ -2559,7 +2701,7 @@ def page_watchlist():
             <div style="font-size:18px;font-weight:700;color:#e2e8f0;margin-bottom:8px;">Your watchlist is empty</div>
             <div style="font-size:13px;color:#374f6e;margin-bottom:20px;">Browse composite categories and click ➕ Watchlist on any stock to track it here.</div>
         </div>''',unsafe_allow_html=True)
-        if st.button("Browse Stocks →",key="wl_browse",type="primary"): nav("discover")
+        if st.button("Browse Stocks →",key="wl_browse3",type="primary"): nav("discover")
         st.markdown('</div>',unsafe_allow_html=True)
         return
 
@@ -2646,13 +2788,17 @@ def page_watchlist():
 def page_screener():
     render_topbar("screener")
     st.markdown('<div class="pg">',unsafe_allow_html=True)
-    st.markdown('<div class="sec-hd">🔍 Advanced Stock Screener</div>',unsafe_allow_html=True)
+    if st.button("← Back", key="scr_back"): go_back()
+    st.markdown('<div style="font-size:22px;font-weight:800;color:#e2e8f0;margin-bottom:4px;">🔍 Advanced Stock Screener</div>',unsafe_allow_html=True)
+    st.markdown('<div style="font-size:13px;color:#374f6e;margin-bottom:16px;">Filter stocks by RSI, MACD, volume, sentiment, and more. Save your best screens.</div>',unsafe_allow_html=True)
     if not is_premium():
         render_lock("Advanced Stock Screener")
         st.markdown('</div>',unsafe_allow_html=True); return
     with st.expander("⚙️ Screener Filters",expanded=True):
         c1,c2,c3,c4=st.columns(4)
-        with c1: min_sc=st.slider("Min SW Score",0,100,40); min_rsi=st.slider("Min RSI",0,100,20)
+        with c1:
+            min_sc=st.slider("Min SW Score",0,100,40,help="StockWins composite score (0-100). 65+ = strong signal")
+            min_rsi=st.slider("Min RSI",0,100,20,help="Minimum RSI. Below 30 = oversold")
         with c2: max_rsi=st.slider("Max RSI",0,100,80); min_sf=st.slider("Min Short Float %",0,50,0)
         with c3:
             req_bull=st.checkbox("MACD Bullish only"); req_above=st.checkbox("Above 20-day MA")
@@ -2695,7 +2841,8 @@ def page_screener():
             sorted_results = pd.DataFrame(results).sort_values("Score",ascending=False)
             sc_ex1,sc_ex2=st.columns([1,3])
             with sc_ex1:
-                export_button(sorted_results.to_dict("records"), "stockwins_screener.xlsx", "📥 Export Results", "scr_export")
+                scr_rows=sorted_results.to_dict("records")
+                export_button(scr_rows, "stockwins_screener.xlsx", "📥 Export Results", "scr_export")
             st.dataframe(sorted_results,use_container_width=True,hide_index=True)
         else: st.info("No matches. Try relaxing filters.")
     st.markdown('</div>',unsafe_allow_html=True)
@@ -2965,6 +3112,7 @@ def page_pricing():
 
     st.markdown('<div class="disc" style="margin-top:14px;">⚠️ Educational platform only. Not financial advice. Trading involves risk.</div>', unsafe_allow_html=True)
     st.markdown('</div>', unsafe_allow_html=True)
+    render_footer()
 
 
 def _do_checkout(plan):
@@ -2987,7 +3135,20 @@ def _do_checkout(plan):
 def page_settings():
     render_topbar()
     st.markdown('<div class="pg">',unsafe_allow_html=True)
-    st.markdown('<div class="sec-hd">⚙️ Account Settings</div>',unsafe_allow_html=True)
+    # Settings header with user info
+    db_u_hdr = st.session_state.users_db.get(st.session_state.user["email"],{}) if is_authed() else {}
+    role_disp = {"owner":"👑 Owner","admin":"🛡️ Admin","premium":"⭐ Premium","free":"👤 Free"}.get(st.session_state.get("role","free"),"👤 Free")
+    plan_disp = db_u_hdr.get("plan","Free")
+    st.markdown(f'''<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:16px;">
+        <div>
+            <div style="font-size:22px;font-weight:800;color:#e2e8f0;">⚙️ Account Settings</div>
+            <div style="font-size:13px;color:#374f6e;margin-top:3px;">{st.session_state.user.get("name","")} · {st.session_state.user.get("email","")}</div>
+        </div>
+        <div style="text-align:right;">
+            <div style="font-size:13px;font-weight:700;color:{GOLD if is_premium() else "#6b7fa0"};">{role_disp}</div>
+            <div style="font-size:11px;color:#2a3a52;">Billing: {plan_disp}</div>
+        </div>
+    </div>''',unsafe_allow_html=True)
     db_user=st.session_state.users_db.get(st.session_state.user["email"],{}) if is_authed() else {}
     email=st.session_state.user["email"] if is_authed() else ""
 
@@ -3044,7 +3205,8 @@ def page_settings():
                        "active":True,"created":datetime.now().strftime("%Y-%m-%d %H:%M")}
                 alerts.append(new_a); st.session_state.alerts=alerts
                 if is_authed(): save_alerts_to_file(st.session_state.user["email"], alerts)
-                st.success(f"✅ Alert set: {at} {atype_lbl} {ap}")
+                st.toast(f"🔔 Alert set: {at} {atype_lbl} {ap}", icon="✅")
+                st.success(f"✅ Alert active: {at} will notify you via {', '.join(channels or ['email'])}")
 
         if alerts:
             st.caption(f"{len(alerts)} active alert{'s' if len(alerts)!=1 else ''}")
@@ -3091,8 +3253,30 @@ def page_settings():
                         st.session_state.users_db[uemail]["telegram_chat_id"]=tg_id.strip()
                         save_user_to_file(uemail, st.session_state.users_db[uemail])
                         st.success("✅ Telegram connected!")
+        # Category Alerts selection (premium)
+        if is_premium():
+            st.markdown('<div class="div-line"></div>',unsafe_allow_html=True)
+            st.markdown('<div style="font-size:13px;font-weight:700;color:#e2e8f0;margin-bottom:8px;">📊 Composite Category Alerts</div>',unsafe_allow_html=True)
+            st.markdown('<div style="font-size:12px;color:#374f6e;margin-bottom:10px;">Choose which composite categories send you Telegram alerts when a stock qualifies. All selected = all 17 categories.</div>',unsafe_allow_html=True)
+            all_cats = list(COMPOSITE_CATS.keys())
+            db_user3 = st.session_state.users_db.get(st.session_state.user["email"],{}) if is_authed() else {}
+            current_cat_alerts = db_user3.get("category_alerts", [])
+            select_all = st.checkbox("Select all categories", value=len(current_cat_alerts)==0 or len(current_cat_alerts)==len(all_cats), key="cat_alert_all")
+            if not select_all:
+                selected_cats = st.multiselect("Choose categories", all_cats,
+                    default=current_cat_alerts if current_cat_alerts else all_cats[:3],
+                    key="cat_alert_sel")
+            else:
+                selected_cats = all_cats
+            if st.button("Save Category Preferences", key="save_cat_alerts", type="primary"):
+                uemail2 = st.session_state.user["email"]
+                chosen = [] if select_all else selected_cats
+                st.session_state.users_db[uemail2]["category_alerts"] = chosen
+                save_user_to_file(uemail2, st.session_state.users_db[uemail2])
+                st.success("✅ Category alert preferences saved!")
+
         if not is_premium():
-            st.markdown(f'<div class="card card-gold" style="margin-top:12px;"><div style="font-size:12px;font-weight:700;color:{GOLD};margin-bottom:4px;">👑 Premium Alert Channels</div><div style="font-size:12px;color:#374f6e;">Upgrade to Premium for instant Telegram alerts and real-time browser push notifications.</div></div>',unsafe_allow_html=True)
+            st.markdown(f'<div class="card card-gold" style="margin-top:12px;"><div style="font-size:12px;font-weight:700;color:{GOLD};margin-bottom:4px;">👑 Premium Alert Channels</div><div style="font-size:12px;color:#374f6e;">Upgrade to Premium for instant Telegram alerts and real-time browser push notifications on composite category signals.</div></div>',unsafe_allow_html=True)
 
     with tabs[3]:
         st.markdown('<div class="sec-hd" style="font-size:13px;">📧 Email Digest Settings</div>',unsafe_allow_html=True)
@@ -3178,6 +3362,16 @@ def page_admin():
     st.markdown('<div class="pg">',unsafe_allow_html=True)
     st.markdown('<div class="sec-hd">🛠️ Admin Panel</div>',unsafe_allow_html=True)
 
+    # Admin role badge
+    cur_role = st.session_state.get("role","admin")
+    role_colors = {"owner":GOLD,"admin":"#93b4fd"}
+    st.markdown(f"""<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+        <div style="font-size:22px;font-weight:800;color:#e2e8f0;">🛠️ Admin Panel</div>
+        <div style="background:rgba(37,99,235,0.1);border:1px solid rgba(37,99,235,0.3);border-radius:8px;
+                    padding:6px 14px;font-size:12px;font-weight:700;color:{role_colors.get(cur_role,'#93b4fd')};">
+            {cur_role.title()} Access
+        </div>
+    </div>""", unsafe_allow_html=True)
     # Security checklist
     st.markdown(f"""<div class="card" style="border-left:3px solid {RED};margin-bottom:16px;">
         <div style="font-size:13px;font-weight:700;color:#f87171;margin-bottom:6px;">🔒 Production Security Checklist</div>
@@ -3399,12 +3593,15 @@ def page_verify_email():
                     uemail = st.session_state.get("_verify_email","")
                     if uemail in st.session_state.users_db:
                         st.session_state.users_db[uemail]["verified"] = True
+                        _save_global_db(st.session_state.users_db)
+                        save_user_to_file(uemail, st.session_state.users_db[uemail])
                     # Complete login
                     udata = st.session_state.get("_verify_user",{})
                     st.session_state.user = {"email":uemail,"name":udata.get("name","")}
                     st.session_state.role = "free"
                     for k in ["_verify_code","_verify_email","_verify_user","_demo_code"]:
                         st.session_state.pop(k,None)
+                    st.session_state["_signup_success"] = udata.get("name","")
                     st.success("✅ Email verified! Welcome to StockWins.")
                     time.sleep(0.3)
                     nav("dashboard")
@@ -3554,6 +3751,7 @@ Be helpful, concise, and friendly. If asked about a specific stock or investment
             st.markdown(f'<div style="font-size:13px;color:#374f6e;line-height:1.75;">{a}</div>',unsafe_allow_html=True)
 
     st.markdown('</div>',unsafe_allow_html=True)
+    render_footer()
 
 # ─────────────────────────────────────────────────────────────
 # ROUTER
@@ -3618,16 +3816,89 @@ if st.session_state.get("_redirect_url"):
 # ── 3. Payment notifications ──
 if st.session_state.get("_pay_success"):
     plan = st.session_state.pop("_pay_success")
-    plan_name = "Annual" if plan=="annual" else "Premium"
-    st.success(f"🎉 Payment successful! Welcome to StockWins {plan_name}! Your account has been upgraded.")
+    plan_name = "Annual Plan" if plan=="annual" else "Premium"
+    # Rich success banner
+    st.markdown(f"""
+    <div style="background:linear-gradient(135deg,#04200d,#0d1525);
+                border:1px solid rgba(34,197,94,0.4);border-radius:14px;
+                padding:28px 32px;margin-bottom:20px;text-align:center;">
+        <div style="font-size:48px;margin-bottom:12px;">🎉</div>
+        <div style="font-size:24px;font-weight:800;color:#4ade80;margin-bottom:8px;">
+            Welcome to StockWins {plan_name}!
+        </div>
+        <div style="font-size:14px;color:#374f6e;margin-bottom:20px;line-height:1.7;">
+            Your account has been upgraded. You now have access to all {plan_name} features.<br>
+            Start exploring all 17 composite categories, the short squeeze scanner, and full BI analytics.
+        </div>
+        <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap;">
+            <span style="background:rgba(34,197,94,0.1);color:#4ade80;font-size:12px;font-weight:700;
+                         padding:6px 16px;border-radius:20px;border:1px solid rgba(34,197,94,0.3);">
+                ✅ All 17 categories unlocked
+            </span>
+            <span style="background:rgba(34,197,94,0.1);color:#4ade80;font-size:12px;font-weight:700;
+                         padding:6px 16px;border-radius:20px;border:1px solid rgba(34,197,94,0.3);">
+                ✅ Squeeze Scanner active
+            </span>
+            <span style="background:rgba(34,197,94,0.1);color:#4ade80;font-size:12px;font-weight:700;
+                         padding:6px 16px;border-radius:20px;border:1px solid rgba(34,197,94,0.3);">
+                ✅ BI Analytics enabled
+            </span>
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
+    # Quick action buttons
+    _qa1, _qa2, _qa3 = st.columns(3, gap="small")
+    with _qa1:
+        if st.button("🎯 Explore Premium Categories", key="ps_disc", type="primary", use_container_width=True):
+            nav("discover")
+    with _qa2:
+        if st.button("📊 Open BI Analytics", key="ps_bi", use_container_width=True):
+            nav("bi_dashboard")
+    with _qa3:
+        if st.button("🔔 Set Up Alerts", key="ps_alerts", use_container_width=True):
+            nav("settings")
 
 if st.session_state.get("_pay_error"):
     err = st.session_state.pop("_pay_error")
-    st.error(f"⚠️ Payment issue: {err}. Contact support@stockwins.com")
+    st.markdown(f"""
+    <div style="background:#200404;border:1px solid rgba(239,68,68,0.3);border-radius:10px;
+                padding:16px 20px;margin-bottom:16px;">
+        <div style="font-size:14px;font-weight:700;color:#f87171;margin-bottom:6px;">
+            ❌ Payment Error
+        </div>
+        <div style="font-size:13px;color:#374f6e;margin-bottom:8px;">{err}</div>
+        <div style="font-size:12px;color:#2a3a52;">
+            Need help? Email <a href="mailto:support@stockwins.com" style="color:#93b4fd;">support@stockwins.com</a>
+            and we'll sort it out within 24 hours.
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
 
 if st.session_state.get("_pay_cancelled"):
     st.session_state.pop("_pay_cancelled")
-    st.info("Payment cancelled — no charge was made. Choose a plan below when you're ready.")
+    st.markdown("""
+    <div style="background:#0d1525;border:1px solid rgba(245,158,11,0.3);border-radius:10px;
+                padding:16px 20px;margin-bottom:16px;">
+        <div style="font-size:14px;font-weight:700;color:#f59e0b;margin-bottom:4px;">
+            ⚠️ Checkout Cancelled
+        </div>
+        <div style="font-size:13px;color:#374f6e;">
+            No charge was made. Your account remains on the free plan.
+            Ready to upgrade? Choose a plan below — it only takes 2 minutes.
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
+
+# ── 3b. Welcome notifications ──
+if st.session_state.get("_logged_out"):
+    st.session_state.pop("_logged_out")
+    st.toast("👋 You've been logged out. See you next time!", icon="✅")
+if st.session_state.get("_signup_success"):
+    name = st.session_state.pop("_signup_success")
+    st.toast(f"🎉 Account created! Welcome to StockWins, {name}!", icon="🚀")
+if st.session_state.get("_login_welcome"):
+    name = st.session_state.pop("_login_welcome")
+    st.toast(f"👋 Welcome back, {name}!", icon="✅")
 
 # ── 4. Complete pending checkout after login ──
 if is_authed() and st.session_state.get("_pending_checkout"):
