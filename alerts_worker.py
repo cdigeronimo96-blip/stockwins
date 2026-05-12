@@ -287,6 +287,38 @@ def process_all_alerts():
             for det_id,cat_name,(triggered,message) in detectors:
                 if not triggered: continue
                 log.info(f"    ✨ {cat_name}: {ticker}")
+
+                # ── Record event in signal engine for outcome tracking ──
+                try:
+                    import sys, os as _os
+                    sys.path.insert(0, _os.path.dirname(_os.path.abspath(__file__)))
+                    from signal_engine import record_signal_event
+                    # Build minimal score components from tech/fund/sent
+                    score_components = {
+                        "Volume":  int(min(tech.get("vol_ratio", 1) * 5, 15)),
+                        "Sentiment": int(min(sent.get("bull", 50) / 5, 15)),
+                        "Squeeze": int(min((fund.get("sf", 0) or 0) * 100 / 2, 10)),
+                        "Trend":   16 if tech.get("price_above_ma20", False) else 8,
+                        "Momentum": 20 if tech.get("rsi", 50) > 50 else 12,
+                        "MACD":    12,
+                    }
+                    total = sum(score_components.values())
+                    record_signal_event(
+                        ticker=ticker,
+                        category=cat_name,
+                        score=int(min(total, 100)),
+                        score_components=score_components,
+                        price=q.get("price", 0),
+                        info={"sf": fund.get("sf"), "dtc": fund.get("dtc"),
+                              "sector": fund.get("sector"), "mktcap": fund.get("mktcap")},
+                        sent={"bull": sent.get("bull"), "bear": sent.get("bear"),
+                              "msgs": sent.get("msgs"), "wl": sent.get("wl")},
+                        recommendation="BUY" if total >= 60 else "WATCH",
+                    )
+                    log.info(f"      → recorded signal event")
+                except Exception as e:
+                    log.warning(f"      Signal record failed: {e}")
+
                 for email,(user,wanted) in subscribers.items():
                     if wanted!="all" and cat_name not in wanted: continue
                     fkey=fire_key(email,f"{ticker}_{det_id}")
@@ -299,6 +331,28 @@ def process_all_alerts():
             log.error(f"  Error {ticker}: {traceback.format_exc()}")
 
     save_json("/tmp/sw_prev_sentiment.json",new_sent)
+
+    # ── Update signal outcomes for tracked signal events ──
+    try:
+        import sys, os as _os
+        sys.path.insert(0, _os.path.dirname(_os.path.abspath(__file__)))
+        from signal_engine import update_signal_outcomes
+        def _price_fetch(ticker, days):
+            try:
+                import yfinance as _yf
+                t = _yf.Ticker(ticker)
+                hist = t.history(period=f"{max(days,30)}d", auto_adjust=True)
+                if hist.empty: return None
+                df = hist.reset_index()
+                df.columns = [c.lower() for c in df.columns]
+                return df
+            except Exception:
+                return None
+        outcomes_updated = update_signal_outcomes(_price_fetch)
+        log.info(f"📈 Signal outcomes updated for {len(outcomes_updated)} events")
+    except Exception as e:
+        log.warning(f"Signal outcomes update failed: {e}")
+
     log.info("\n✅ Done.")
 
 if __name__=="__main__":
