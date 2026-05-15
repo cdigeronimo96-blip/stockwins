@@ -52,7 +52,7 @@ except ImportError:
 st.set_page_config(
     page_title="StockWins | Spot Market Opportunities First",
     page_icon="📈", layout="wide",
-    initial_sidebar_state="expanded",
+    initial_sidebar_state="auto",
 )
 
 # ─────────────────────────────────────────────────────────────
@@ -444,6 +444,47 @@ button:active, [role="button"]:active, .stButton button:active {{
         const swUrl = URL.createObjectURL(blob);
         navigator.serviceWorker.register(swUrl).catch(() => {{}});
     }}
+
+    // ── SIDEBAR COLLAPSE BUTTON WATCHDOG ──
+    // Streamlit aggressively hides the collapse control via inline styles after state changes.
+    // We mutation-observe and force it visible. This runs continuously.
+    function ensureSidebarToggleVisible() {{
+        const selectors = [
+            '[data-testid="collapsedControl"]',
+            '[data-testid="stSidebarCollapseButton"]',
+            '[data-testid="stSidebarCollapsedControl"]'
+        ];
+        selectors.forEach(sel => {{
+            document.querySelectorAll(sel).forEach(el => {{
+                // Strip inline display:none / visibility:hidden that Streamlit injects
+                if (el.style.display === 'none')        el.style.display = '';
+                if (el.style.visibility === 'hidden')   el.style.visibility = '';
+                if (el.style.opacity === '0')           el.style.opacity = '';
+                el.removeAttribute('hidden');
+            }});
+        }});
+    }}
+    // Run immediately, then every 400ms (cheap, catches Streamlit reruns)
+    setInterval(ensureSidebarToggleVisible, 400);
+    ensureSidebarToggleVisible();
+
+    // Also observe DOM mutations to catch fresh insertions instantly
+    const sidebarObserver = new MutationObserver(ensureSidebarToggleVisible);
+    sidebarObserver.observe(document.body, {{ childList: true, subtree: true, attributes: true, attributeFilter: ['style','class','aria-expanded'] }});
+
+    // ── MOBILE: Close sidebar when user taps outside it ──
+    document.addEventListener('click', (e) => {{
+        if (window.innerWidth > 992) return; // only mobile
+        const sidebar = document.querySelector('[data-testid="stSidebar"]');
+        if (!sidebar || sidebar.getAttribute('aria-expanded') !== 'true') return;
+        const isInside = sidebar.contains(e.target);
+        const isToggle = e.target.closest('[data-testid="collapsedControl"], [data-testid="stSidebarCollapseButton"]');
+        if (!isInside && !isToggle) {{
+            // Find the collapse button and click it
+            const btn = document.querySelector('[data-testid="stSidebarCollapseButton"]');
+            if (btn) btn.click();
+        }}
+    }}, true);
 }})();
 </script>
 """, unsafe_allow_html=True)
@@ -734,32 +775,66 @@ html,body,[data-testid="stAppViewContainer"]{{
 div.block-container{{padding:0 !important;max-width:100% !important;}}
 section.main>div{{padding-top:0 !important;}}
 
-/* ── Sidebar ── */
+/* ── Sidebar (Desktop default) ── */
 [data-testid="stSidebar"]{{
     background:#080c18 !important;
     border-right:1px solid {BORDER} !important;
     width:225px !important;min-width:225px !important;max-width:225px !important;
     position:sticky !important;top:0 !important;
     height:100vh !important;
+    transition: margin-left 0.3s ease !important;
 }}
 [data-testid="stSidebar"]>div{{
     padding:0 !important;
     height:100vh !important;
     overflow-y:auto !important;
 }}
-/* Ensure hamburger / collapse control visible always */
-[data-testid="collapsedControl"]{{
-    background:#0d1525 !important;
-    border:1px solid {BORDER} !important;
-    border-radius:6px !important;
-    color:#93b4fd !important;
-    z-index:10000 !important;
-    visibility:visible !important;
-    display:block !important;
+
+/* ── Collapse/Expand Button — ALWAYS VISIBLE ── */
+/* The little arrow that toggles the sidebar (Streamlit hides this after collapse — we force it back) */
+[data-testid="collapsedControl"],
+[data-testid="stSidebarCollapseButton"],
+button[kind="header"][data-testid="baseButton-header"],
+[data-testid="stSidebarCollapsedControl"]{{
+    visibility: visible !important;
+    opacity: 1 !important;
+    display: flex !important;
+    position: fixed !important;
+    top: 12px !important;
+    left: 12px !important;
+    z-index: 999999 !important;
+    background: rgba(13, 21, 37, 0.95) !important;
+    backdrop-filter: blur(12px) !important;
+    -webkit-backdrop-filter: blur(12px) !important;
+    border: 1px solid rgba(96, 165, 250, 0.4) !important;
+    border-radius: 8px !important;
+    color: #93b4fd !important;
+    width: 36px !important;
+    height: 36px !important;
+    padding: 6px !important;
+    box-shadow: 0 4px 14px rgba(0,0,0,0.4) !important;
+    cursor: pointer !important;
+    align-items: center !important;
+    justify-content: center !important;
 }}
-[data-testid="stSidebarCollapseButton"]{{
-    visibility:visible !important;
-    color:#93b4fd !important;
+[data-testid="collapsedControl"]:hover,
+[data-testid="stSidebarCollapseButton"]:hover{{
+    background: rgba(37, 99, 235, 0.25) !important;
+    border-color: rgba(96, 165, 250, 0.8) !important;
+    transform: scale(1.05) !important;
+}}
+[data-testid="collapsedControl"] svg,
+[data-testid="stSidebarCollapseButton"] svg{{
+    width: 18px !important;
+    height: 18px !important;
+    color: #93b4fd !important;
+    fill: #93b4fd !important;
+}}
+
+/* When sidebar is OPEN, move the collapse button to top of sidebar (inside it) */
+[data-testid="stSidebar"][aria-expanded="true"] ~ * [data-testid="collapsedControl"],
+[data-testid="stSidebar"]:not([aria-expanded="false"]) ~ * [data-testid="collapsedControl"]{{
+    left: 188px !important;
 }}
 
 /* ── Base Button ── */
@@ -1077,12 +1152,64 @@ button[role="tab"][aria-selected="true"]{{
     .pg{{padding:12px 14px 28px !important;}}
     /* Footer */
     .sw-footer-wrap{{padding:24px 20px 20px !important;}}
-    /* Sidebar collapsible on mobile - never permanently hide */
+
+    /* ════════════════════════════════════════════════════════════
+       MOBILE SIDEBAR — narrower, overlay-style, collapsed by default
+    ════════════════════════════════════════════════════════════ */
     [data-testid="stSidebar"]{{
-        position:fixed!important;
-        height:100vh!important;
-        z-index:999!important;
+        position: fixed !important;
+        top: 0 !important;
+        left: 0 !important;
+        height: 100vh !important;
+        width: 75vw !important;
+        min-width: 75vw !important;
+        max-width: 280px !important;
+        z-index: 999990 !important;
+        box-shadow: 4px 0 30px rgba(0, 0, 0, 0.5) !important;
+        transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1) !important;
     }}
+    /* Sidebar collapsed = slide off-screen */
+    [data-testid="stSidebar"][aria-expanded="false"]{{
+        transform: translateX(-100%) !important;
+        box-shadow: none !important;
+    }}
+    /* Make sure main content doesn't get pushed by sidebar on mobile */
+    section.main, [data-testid="stMain"]{{
+        margin-left: 0 !important;
+        width: 100vw !important;
+    }}
+    /* Backdrop overlay when sidebar open on mobile */
+    [data-testid="stSidebar"][aria-expanded="true"]::after{{
+        content: '';
+        position: fixed;
+        top: 0; left: 100%;
+        width: 100vw;
+        height: 100vh;
+        background: rgba(0, 0, 0, 0.6);
+        backdrop-filter: blur(2px);
+        z-index: -1;
+        pointer-events: auto;
+    }}
+
+    /* Collapse button on mobile - bigger and more visible */
+    [data-testid="collapsedControl"],
+    [data-testid="stSidebarCollapseButton"]{{
+        width: 44px !important;
+        height: 44px !important;
+        top: 16px !important;
+        left: 16px !important;
+    }}
+    [data-testid="collapsedControl"] svg,
+    [data-testid="stSidebarCollapseButton"] svg{{
+        width: 22px !important;
+        height: 22px !important;
+    }}
+    /* When sidebar OPEN on mobile, move collapse button inside sidebar at top right */
+    [data-testid="stSidebar"][aria-expanded="true"] ~ * [data-testid="collapsedControl"]{{
+        left: calc(75vw - 56px) !important;
+        max-width: 280px !important;
+    }}
+
     /* Stack hero columns */
     [data-testid="stHorizontalBlock"]{{flex-wrap:wrap !important;}}
     [data-testid="stHorizontalBlock"] [data-testid="column"]{{min-width:100% !important;flex:none !important;}}
@@ -1936,6 +2063,10 @@ def _render_bottom_nav(active=""):
         /* On standalone, hide the top navigation row since bottom nav is primary */
         .sw-nav { display: none !important; }
         .sw-divider { display: none !important; }
+        /* Hide the entire sidebar in standalone — bottom nav handles everything */
+        [data-testid="stSidebar"] { display: none !important; }
+        [data-testid="collapsedControl"],
+        [data-testid="stSidebarCollapseButton"] { display: none !important; }
     }
     .sw-bnav-item {
         flex: 1;
