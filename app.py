@@ -1755,6 +1755,271 @@ st.markdown("""
 </script>
 """, unsafe_allow_html=True)
 
+
+
+st.markdown("""
+<style>
+/* ─────────────────────────────────────────────────────────────
+   MSP FINAL PUBLIC/APP LAYOUT OVERRIDES
+   Header/footer/reviews can flow full width. App page content stays in a centered safe container.
+───────────────────────────────────────────────────────────── */
+:root {
+  --msp-public-pad: clamp(28px, 12vw, 220px);
+  --msp-shell-max: 1180px;
+  --msp-edge-pad: clamp(22px, 4vw, 56px);
+  --msp-sidebar-w: 250px;
+}
+html, body, [data-testid="stAppViewContainer"], [data-testid="stMain"], .main, div.block-container {
+  overflow-x: hidden !important;
+  max-width: 100vw !important;
+}
+.main .block-container, div.block-container {
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+}
+/* Header ignores the page shell and spans the screen, but content is pulled in from the edges. */
+.sw-desktop-topbar {
+  width: 100vw !important;
+  max-width: none !important;
+  margin-left: calc(50% - 50vw) !important;
+  margin-right: calc(50% - 50vw) !important;
+  padding: 14px var(--msp-public-pad) 10px var(--msp-public-pad) !important;
+  min-height: 62px !important;
+  box-sizing: border-box !important;
+}
+.sw-topbar-logo { margin-left: 0 !important; flex: 0 0 auto !important; }
+.sw-topbar-logo span { font-size: 27px !important; }
+.sw-topbar-nav {
+  margin-left: auto !important;
+  margin-right: 0 !important;
+  gap: 12px !important;
+  justify-content: flex-end !important;
+}
+.sw-topbar-link {
+  min-width: 114px !important;
+  padding: 12px 18px !important;
+  text-align: center !important;
+  font-size: 14px !important;
+}
+.sw-topbar-link.primary { min-width: 126px !important; }
+.sw-divider {
+  width: calc(100vw - (var(--msp-public-pad) * 2)) !important;
+  max-width: none !important;
+  margin: 0 auto 18px auto !important;
+}
+/* Main app/public content shell: same width on every page, no right-edge overflow. */
+.pg, .sw-page-shell, .sw-hero-row, .sw-auth-nav {
+  width: min(var(--msp-shell-max), calc(100vw - (var(--msp-edge-pad) * 2))) !important;
+  max-width: var(--msp-shell-max) !important;
+  margin-left: auto !important;
+  margin-right: auto !important;
+  box-sizing: border-box !important;
+  overflow: hidden !important;
+}
+.pg, .sw-page-shell { padding: 28px 0 52px !important; }
+/* Landing hero: keep both sides in the container, equal safe widths. */
+.sw-hero-row {
+  padding: 18px 0 0 !important;
+  overflow: visible !important;
+}
+.sw-hero-left-block {
+  max-width: 430px !important;
+  padding-top: 12px !important;
+}
+.sw-hero-demo-wrap {
+  max-width: 560px !important;
+  width: 100% !important;
+  margin-left: auto !important;
+  overflow: hidden !important;
+  box-sizing: border-box !important;
+}
+.sw-hero-demo-wrap * { max-width: 100% !important; box-sizing: border-box !important; }
+.sw-hero-row .stButton,
+.sw-hero-row .stButton > button,
+button[aria-label="🚀 Create Free Account"],
+button[aria-label="Sign In"] {
+  width: min(420px, 100%) !important;
+  max-width: 420px !important;
+  min-height: 42px !important;
+  flex: 0 0 auto !important;
+}
+/* Keep internal grids/cards from bleeding outside the shell. */
+[data-testid="stHorizontalBlock"], [data-testid="column"], .element-container,
+.card, .sr, .stat, .price-card, .price-card-featured, .price-card-gold,
+[data-testid="stDataFrame"], iframe, canvas, svg {
+  max-width: 100% !important;
+  box-sizing: border-box !important;
+}
+[data-testid="stHorizontalBlock"] { overflow: hidden !important; }
+/* Signed-in Streamlit nav is a shell item, not a full browser-width item. */
+.sw-auth-nav {
+  margin-top: 10px !important;
+  margin-bottom: 12px !important;
+  overflow: visible !important;
+}
+.sw-auth-nav .stButton>button {
+  min-height: 44px !important;
+  font-size: 13px !important;
+  padding: 8px 10px !important;
+}
+.sw-auth-nav [data-testid="column"]:first-child .stButton>button {
+  font-size: 22px !important;
+  overflow: visible !important;
+  justify-content: flex-start !important;
+}
+/* Footer and testimonial/reviews intentionally ignore the shell. */
+.sw-footer-wrap {
+  width: 100vw !important;
+  max-width: none !important;
+  margin-left: calc(50% - 50vw) !important;
+  margin-right: calc(50% - 50vw) !important;
+}
+.sw-reviews-track, .sw-testimonials-track, .sw-reviews-scroll, .reviews-row, .testimonial-row {
+  width: 100vw !important;
+  max-width: none !important;
+  margin-left: calc(50% - 50vw) !important;
+  margin-right: calc(50% - 50vw) !important;
+  scrollbar-width: none !important;
+  -ms-overflow-style: none !important;
+}
+.sw-reviews-track::-webkit-scrollbar,
+.sw-testimonials-track::-webkit-scrollbar,
+.sw-reviews-scroll::-webkit-scrollbar,
+.reviews-row::-webkit-scrollbar,
+.testimonial-row::-webkit-scrollbar { display: none !important; }
+/* Sidebar only exists for signed-in users via Python. Make it clean and usable. */
+[data-testid="stSidebar"] {
+  width: var(--msp-sidebar-w) !important;
+  min-width: var(--msp-sidebar-w) !important;
+  max-width: var(--msp-sidebar-w) !important;
+  background: #080d19 !important;
+  border-right: 1px solid rgba(255,255,255,0.09) !important;
+  overflow: visible !important;
+}
+[data-testid="stSidebar"] > div {
+  padding: 12px 12px 18px !important;
+  overflow-x: hidden !important;
+}
+[data-testid="stSidebar"] .stButton>button {
+  min-height: 42px !important;
+  padding: 10px 12px !important;
+  margin: 4px 0 !important;
+  color: #c8d8ea !important;
+  background: rgba(255,255,255,0.04) !important;
+  border: 1px solid rgba(255,255,255,0.07) !important;
+  border-left: 2px solid rgba(37,99,235,0.5) !important;
+  border-radius: 0 !important;
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  justify-content: flex-start !important;
+}
+[data-testid="stSidebar"] .stButton>button:hover {
+  color: #fff !important;
+  background: rgba(37,99,235,0.20) !important;
+  border-left-color: #60a5fa !important;
+}
+/* Native sidebar controls. Open button on right edge, collapsed button plus our fallback at left. */
+[data-testid="stSidebarCollapseButton"] {
+  position: fixed !important;
+  left: calc(var(--msp-sidebar-w) - 52px) !important;
+  top: 10px !important;
+  width: 44px !important;
+  height: 44px !important;
+  z-index: 2147483647 !important;
+  pointer-events: auto !important;
+  background: #0d2548 !important;
+  border: 1px solid rgba(96,165,250,0.95) !important;
+  border-radius: 11px !important;
+  box-shadow: 0 0 0 2px rgba(37,99,235,0.30), 0 8px 28px rgba(0,0,0,0.58) !important;
+}
+[data-testid="collapsedControl"], [data-testid="stSidebarCollapsedControl"], #msp-sidebar-open-fallback {
+  position: fixed !important;
+  left: 16px !important;
+  top: 16px !important;
+  width: 54px !important;
+  height: 54px !important;
+  z-index: 2147483647 !important;
+  pointer-events: auto !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  background: #12315f !important;
+  border: 1px solid rgba(147,197,253,1) !important;
+  border-radius: 14px !important;
+  box-shadow: 0 0 0 3px rgba(37,99,235,0.34), 0 8px 32px rgba(0,0,0,0.65) !important;
+}
+#msp-sidebar-open-fallback {
+  color: #fff !important;
+  font-size: 26px !important;
+  font-weight: 900 !important;
+  cursor: pointer !important;
+}
+[data-testid="collapsedControl"] svg,
+[data-testid="stSidebarCollapsedControl"] svg,
+[data-testid="stSidebarCollapseButton"] svg {
+  width: 25px !important;
+  height: 25px !important;
+  color: #ffffff !important;
+  fill: #ffffff !important;
+}
+[data-testid="collapsedControl"] svg,
+[data-testid="stSidebarCollapsedControl"] svg { transform: rotate(180deg) !important; }
+@media (max-width: 900px) {
+  :root { --msp-public-pad: 16px; --msp-edge-pad: 14px; --msp-sidebar-w: min(82vw, 310px); }
+  .sw-desktop-topbar { display:none !important; }
+  .sw-divider { width: calc(100vw - 28px) !important; }
+  .pg, .sw-page-shell { padding: 18px 0 34px !important; }
+  .sw-hero-row { padding: 12px 0 0 !important; }
+  [data-testid="stSidebar"] { width: var(--msp-sidebar-w) !important; min-width: var(--msp-sidebar-w) !important; max-width: var(--msp-sidebar-w) !important; }
+  [data-testid="stSidebarCollapseButton"] { left: calc(var(--msp-sidebar-w) - 56px) !important; }
+}
+</style>
+<script>
+(function(){
+  function mspFixSidebarOpenButton(){
+    const hasSidebar = !!document.querySelector('[data-testid="stSidebar"]');
+    let fallback = document.getElementById('msp-sidebar-open-fallback');
+    if(!hasSidebar){ if(fallback) fallback.remove(); return; }
+    const collapsed = document.querySelector('[data-testid="collapsedControl"], [data-testid="stSidebarCollapsedControl"]');
+    const openBtn = document.querySelector('[data-testid="stSidebarCollapseButton"]');
+    [collapsed, openBtn].forEach(function(btn){
+      if(!btn) return;
+      btn.style.pointerEvents = 'auto';
+      btn.style.zIndex = '2147483647';
+      btn.style.opacity = '1';
+      btn.style.visibility = 'visible';
+      btn.removeAttribute('hidden');
+    });
+    // Build a reliable click target only when Streamlit has collapsed the sidebar.
+    const sidebar = document.querySelector('[data-testid="stSidebar"]');
+    const collapsedLikely = collapsed && (!sidebar || sidebar.getAttribute('aria-expanded') === 'false' || getComputedStyle(sidebar).display === 'none');
+    if(collapsedLikely){
+      if(!fallback){
+        fallback = document.createElement('button');
+        fallback.id = 'msp-sidebar-open-fallback';
+        fallback.type = 'button';
+        fallback.innerHTML = '›';
+        fallback.title = 'Open sidebar';
+        fallback.onclick = function(e){
+          e.preventDefault(); e.stopPropagation();
+          const c = document.querySelector('[data-testid="collapsedControl"], [data-testid="stSidebarCollapsedControl"]');
+          if(c) c.click();
+        };
+        document.body.appendChild(fallback);
+      }
+    } else if(fallback) {
+      fallback.remove();
+    }
+  }
+  window.addEventListener('load', mspFixSidebarOpenButton);
+  setInterval(mspFixSidebarOpenButton, 300);
+  new MutationObserver(mspFixSidebarOpenButton).observe(document.body, {childList:true, subtree:true, attributes:true});
+})();
+</script>
+""", unsafe_allow_html=True)
+
 # ─────────────────────────────────────────────────────────────
 # CONSTANTS
 # ─────────────────────────────────────────────────────────────
@@ -7150,7 +7415,8 @@ Be helpful, concise, and friendly. If asked about a specific stock or investment
 # ─────────────────────────────────────────────────────────────
 # ROUTER
 # ─────────────────────────────────────────────────────────────
-render_sidebar()
+if is_authed():
+    render_sidebar()
 
 # ── 1. Handle Stripe payment returns (URL params) ──
 handle_payment_return()
