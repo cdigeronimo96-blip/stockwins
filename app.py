@@ -1421,6 +1421,157 @@ st.markdown("""<style>
 }
 </style>""", unsafe_allow_html=True)
 
+
+
+st.markdown("""<style>
+/* ─────────────────────────────────────────────────────────────
+   MarketSignalPro overflow/sidebar/session-safe navigation fixes
+───────────────────────────────────────────────────────────── */
+html, body, [data-testid="stAppViewContainer"], [data-testid="stMain"] {
+  overflow-x: hidden !important;
+  max-width: 100vw !important;
+}
+.main .block-container, div.block-container {
+  overflow-x: hidden !important;
+  max-width: 100vw !important;
+}
+.pg {
+  width: min(1180px, calc(100vw - 72px)) !important;
+  max-width: 1180px !important;
+  margin-left: auto !important;
+  margin-right: auto !important;
+  padding: 30px 0 52px !important;
+}
+@media (max-width:900px) {
+  .pg { width: calc(100vw - 28px) !important; padding: 18px 0 34px !important; }
+}
+[data-testid="stHorizontalBlock"], [data-testid="column"], .element-container {
+  max-width: 100% !important;
+}
+
+/* Signed-in Streamlit-button topbar */
+.sw-auth-nav {
+  width: min(1180px, calc(100vw - 64px)) !important;
+  margin: 12px auto 14px !important;
+}
+.sw-auth-nav .stButton>button {
+  min-height: 48px !important;
+  border-radius: 9px !important;
+  font-size: 14px !important;
+  font-weight: 650 !important;
+  color: #bfdbfe !important;
+  background: rgba(255,255,255,0.045) !important;
+  border: 1px solid rgba(255,255,255,0.16) !important;
+  white-space: nowrap !important;
+}
+.sw-auth-nav .stButton>button:hover {
+  background: rgba(37,99,235,0.16) !important;
+  color: #fff !important;
+  border-color: rgba(96,165,250,0.55) !important;
+}
+.sw-auth-nav .stButton>button[kind="primary"] {
+  background: #2563eb !important;
+  border-color: #2563eb !important;
+  color: #fff !important;
+}
+.sw-auth-nav [data-testid="column"]:first-child .stButton>button {
+  background: transparent !important;
+  border: none !important;
+  justify-content: flex-start !important;
+  padding-left: 0 !important;
+  color: #e2e8f0 !important;
+  font-family: 'JetBrains Mono', monospace !important;
+  font-size: 24px !important;
+  font-weight: 800 !important;
+  letter-spacing: -1px !important;
+}
+.sw-auth-nav [data-testid="column"]:first-child .stButton>button::first-letter { color:#e2e8f0 !important; }
+.sw-topbar-user-label {
+  margin-top: -8px;
+  font-size: 10px;
+  color: #526985;
+}
+@media (max-width:900px) {
+  .sw-auth-nav { display:none !important; }
+}
+
+/* Cleaner sidebar */
+[data-testid="stSidebar"] {
+  width: 252px !important;
+  min-width: 252px !important;
+  max-width: 252px !important;
+  background: #080d19 !important;
+  border-right: 1px solid rgba(255,255,255,0.08) !important;
+}
+[data-testid="stSidebar"] > div {
+  padding: 8px 10px 18px !important;
+}
+[data-testid="stSidebar"] .stButton>button {
+  color: #b8cce0 !important;
+  background: rgba(255,255,255,0.035) !important;
+  border: 1px solid rgba(255,255,255,0.06) !important;
+  border-left: 2px solid rgba(37,99,235,0.35) !important;
+  border-radius: 0 !important;
+  min-height: 42px !important;
+  padding: 10px 12px !important;
+  margin: 3px 0 !important;
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  justify-content: flex-start !important;
+}
+[data-testid="stSidebar"] .stButton>button:hover {
+  color: #ffffff !important;
+  background: rgba(37,99,235,0.18) !important;
+  border-color: rgba(96,165,250,0.36) !important;
+  border-left-color: #2563eb !important;
+}
+[data-testid="stSidebar"] hr { margin: 10px 0 !important; }
+
+/* Collapse/expand control: right edge when open, visible left rail when collapsed */
+[data-testid="stSidebarCollapseButton"] {
+  left: 204px !important;
+  top: 10px !important;
+  width: 42px !important;
+  height: 42px !important;
+  background: rgba(13,21,37,0.98) !important;
+  border: 1px solid rgba(96,165,250,0.65) !important;
+  box-shadow: 0 0 0 1px rgba(37,99,235,0.15), 0 8px 24px rgba(0,0,0,0.45) !important;
+}
+[data-testid="collapsedControl"], [data-testid="stSidebarCollapsedControl"] {
+  left: 8px !important;
+  top: 10px !important;
+  width: 46px !important;
+  height: 46px !important;
+  background: #0d2548 !important;
+  border: 1px solid rgba(96,165,250,0.95) !important;
+  box-shadow: 0 0 0 2px rgba(37,99,235,0.25), 0 8px 30px rgba(0,0,0,0.55) !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+  z-index: 1000000 !important;
+}
+[data-testid="collapsedControl"] svg,
+[data-testid="stSidebarCollapsedControl"] svg {
+  width: 24px !important;
+  height: 24px !important;
+  color: #dbeafe !important;
+  fill: #dbeafe !important;
+  transform: rotate(180deg) !important;
+}
+[data-testid="stSidebarCollapseButton"] svg {
+  width: 22px !important;
+  height: 22px !important;
+  color: #dbeafe !important;
+  fill: #dbeafe !important;
+}
+@media (max-width:900px) {
+  [data-testid="stSidebar"] { width: 82vw !important; min-width: 82vw !important; max-width: 310px !important; }
+  [data-testid="stSidebarCollapseButton"] { left: calc(min(82vw, 310px) - 54px) !important; }
+}
+
+/* Discover/category grids should not run off-screen */
+.disc-cat-header, .lock, .card, .sr { max-width: 100% !important; }
+</style>""", unsafe_allow_html=True)
+
 # ─────────────────────────────────────────────────────────────
 # CONSTANTS
 # ─────────────────────────────────────────────────────────────
@@ -2327,83 +2478,67 @@ def _render_bottom_nav(active=""):
 
 
 def render_topbar(active=""):
+    """Top navigation.
+
+    Signed-in navigation uses Streamlit buttons instead of raw <a href> links.
+    That prevents opening a new browser tab/session and keeps the user signed in
+    while still letting nav() update the ?page= URL for browser history.
+    """
     st.markdown(NAV_CSS, unsafe_allow_html=True)
-    # ── PWA bottom nav (only visible when launched as installed app, hidden on desktop & in browser) ──
+
     if is_authed():
         _render_bottom_nav(active)
 
-    # ════════════════════════════════════════════════════════════
-    # DESKTOP TOPBAR — pure HTML/CSS so we can reliably hide on mobile
-    # Uses URL params for navigation (no Streamlit button machinery)
-    # ════════════════════════════════════════════════════════════
     if is_authed():
         pages=[("Dashboard","dashboard"),("Discover","discover"),("Watchlist","watchlist"),
                ("Screener","screener"),("BI Analytics","bi_dashboard"),("Pricing","pricing"),("Contact","contact")]
-        if is_admin(): pages.append(("🛠 Admin","admin"))
+        if is_admin():
+            pages.append(("Admin","admin"))
 
         ri={"owner":"👑","admin":"🛡️","premium":"⭐","free":"👤"}.get(st.session_state.role,"👤")
         user_name = st.session_state.user.get("name","")
 
-        # Build nav links as pure HTML
-        nav_links = ""
-        for lbl, pg in pages:
-            is_active_cls = " active" if active == pg else ""
-            nav_links += f'<a href="?page={pg}" class="sw-topbar-link{is_active_cls}">{lbl}</a>'
-
-        st.markdown(f"""
-        <div class="sw-desktop-topbar">
-            <div class="sw-topbar-logo">
-                <span style="font-family:'JetBrains Mono',monospace;font-size:22px;font-weight:700;letter-spacing:-0.5px;">
-                    <a href="?page=dashboard" style="text-decoration:none;">
-                        <span style="color:#e2e8f0;">Market</span><span style="color:#f59e0b;">Signal</span><span style="color:#e2e8f0;">Pro</span>
-                    </a>
-                </span>
-            </div>
-            <div class="sw-topbar-nav">{nav_links}</div>
-            <div class="sw-topbar-user">
-                <span style="font-size:12px;color:#6b7fa0;white-space:nowrap;">{ri} {user_name}</span>
-                <a href="?page=settings" class="sw-topbar-icon" title="Settings">⚙️</a>
-                <a href="?logout=1" class="sw-topbar-icon" title="Log out">↩️</a>
-            </div>
-        </div>
-        """, unsafe_allow_html=True)
-
-        # Mobile-only topbar: logo + tiny settings icon
-        st.markdown(f"""
-        <div class="sw-mobile-topbar-bar">
-            <a href="?page=dashboard" class="sw-mobile-logo">
-                <span style="font-family:'JetBrains Mono',monospace;font-size:20px;font-weight:700;letter-spacing:-0.5px;">
-                    <span style="color:#e2e8f0;">Market</span><span style="color:#f59e0b;">Signal</span><span style="color:#e2e8f0;">Pro</span>
-                </span>
-            </a>
-            <a href="?page=settings" class="sw-mobile-icon">⚙️</a>
-        </div>
-        """, unsafe_allow_html=True)
+        st.markdown('<div class="sw-nav sw-auth-nav sw-auth-nav-marker">', unsafe_allow_html=True)
+        nav_cols = st.columns([2.35] + [1.18]*len(pages) + [0.62,0.62], gap="small")
+        with nav_cols[0]:
+            if st.button("MarketSignalPro", key=f"top_logo_{active}", use_container_width=True):
+                nav("dashboard")
+            st.markdown(f'<div class="sw-topbar-user-label">{ri} {user_name}</div>', unsafe_allow_html=True)
+        for idx,(lbl,pg) in enumerate(pages, start=1):
+            with nav_cols[idx]:
+                if st.button(lbl, key=f"topnav_{pg}_{active}", type=("primary" if active==pg else "secondary"), use_container_width=True):
+                    nav(pg)
+        with nav_cols[-2]:
+            if st.button("⚙️", key=f"top_settings_{active}", use_container_width=True):
+                nav("settings")
+        with nav_cols[-1]:
+            if st.button("↩️", key=f"top_logout_{active}", use_container_width=True):
+                logout()
+        st.markdown('</div>', unsafe_allow_html=True)
     else:
-        # Logged-out: same approach
+        # Logged-out public topbar. Links stay in the same tab and are okay because there is no active session to preserve.
         st.markdown(f"""
         <div class="sw-desktop-topbar">
             <div class="sw-topbar-logo">
                 <span style="font-family:'JetBrains Mono',monospace;font-size:22px;font-weight:700;letter-spacing:-0.5px;">
-                    <a href="?page=landing" style="text-decoration:none;">
+                    <a href="?page=landing" target="_self" style="text-decoration:none;">
                         <span style="color:#e2e8f0;">Market</span><span style="color:#f59e0b;">Signal</span><span style="color:#e2e8f0;">Pro</span>
                     </a>
                 </span>
             </div>
             <div class="sw-topbar-nav">
-                <a href="?page=features" class="sw-topbar-link">Features</a>
-                <a href="?page=pricing" class="sw-topbar-link">Pricing</a>
-                <a href="?page=contact" class="sw-topbar-link">Contact</a>
-                <a href="?page=login" class="sw-topbar-link">Login</a>
-                <a href="?page=signup" class="sw-topbar-link primary">Sign Up →</a>
+                <a href="?page=features" target="_self" class="sw-topbar-link">Features</a>
+                <a href="?page=pricing" target="_self" class="sw-topbar-link">Pricing</a>
+                <a href="?page=contact" target="_self" class="sw-topbar-link">Contact</a>
+                <a href="?page=login" target="_self" class="sw-topbar-link">Login</a>
+                <a href="?page=signup" target="_self" class="sw-topbar-link primary">Sign Up →</a>
             </div>
         </div>
         """, unsafe_allow_html=True)
 
-        # Mobile-only: just the logo
         st.markdown(f"""
         <div class="sw-mobile-topbar-bar">
-            <a href="?page=landing" class="sw-mobile-logo">
+            <a href="?page=landing" target="_self" class="sw-mobile-logo">
                 <span style="font-family:'JetBrains Mono',monospace;font-size:20px;font-weight:700;letter-spacing:-0.5px;">
                     <span style="color:#e2e8f0;">Market</span><span style="color:#f59e0b;">Signal</span><span style="color:#e2e8f0;">Pro</span>
                 </span>
@@ -2652,20 +2787,20 @@ def page_landing():
     <div class="sw-desktop-topbar">
         <div class="sw-topbar-logo">
             <span style="font-family:'JetBrains Mono',monospace;font-size:22px;font-weight:700;letter-spacing:-0.5px;">
-                <a href="?page=landing" style="text-decoration:none;">
+                <a href="?page=landing" target="_self" style="text-decoration:none;">
                     <span style="color:#e2e8f0;">Market</span><span style="color:#f59e0b;">Signal</span><span style="color:#e2e8f0;">Pro</span>
                 </a>
             </span>
         </div>
         <div class="sw-topbar-nav">
-            <a href="?page=features" class="sw-topbar-link">Features</a>
-            <a href="?page=pricing" class="sw-topbar-link">Pricing</a>
-            <a href="?page=login" class="sw-topbar-link">Login</a>
-            <a href="?page=signup" class="sw-topbar-link primary">Sign Up →</a>
+            <a href="?page=features" target="_self" class="sw-topbar-link">Features</a>
+            <a href="?page=pricing" target="_self" class="sw-topbar-link">Pricing</a>
+            <a href="?page=login" target="_self" class="sw-topbar-link">Login</a>
+            <a href="?page=signup" target="_self" class="sw-topbar-link primary">Sign Up →</a>
         </div>
     </div>
     <div class="sw-mobile-topbar-bar">
-        <a href="?page=landing" class="sw-mobile-logo">
+        <a href="?page=landing" target="_self" class="sw-mobile-logo">
             <span style="font-family:'JetBrains Mono',monospace;font-size:20px;font-weight:700;letter-spacing:-0.5px;">
                 <span style="color:#e2e8f0;">Market</span><span style="color:#f59e0b;">Signal</span><span style="color:#e2e8f0;">Pro</span>
             </span>
@@ -3798,6 +3933,7 @@ def page_dashboard():
 # ─────────────────────────────────────────────────────────────
 def page_discover():
     render_topbar("discover")
+    st.markdown('<div class="pg">', unsafe_allow_html=True)
     st.markdown(f"""<style>
     .disc-tabs{{display:flex;flex-wrap:wrap;gap:8px;margin:8px 0 4px;padding:0;}}
     .disc-section-label{{font-size:10px;font-weight:700;color:#4a5e7a;letter-spacing:2px;text-transform:uppercase;margin:14px 0 8px;}}
@@ -3842,9 +3978,9 @@ def page_discover():
 
     # Render composite cats in a grid (4 per row)
     comp_items = list(COMPOSITE_CATS.items())
-    for row_start in range(0, len(comp_items), 4):
-        cols = st.columns(4, gap="small")
-        for col_idx, (cat, (desc, tier)) in enumerate(comp_items[row_start:row_start+4]):
+    for row_start in range(0, len(comp_items), 3):
+        cols = st.columns(3, gap="medium")
+        for col_idx, (cat, (desc, tier)) in enumerate(comp_items[row_start:row_start+3]):
             with cols[col_idx]:
                 is_l = tier=="premium" and not is_premium()
                 safe = cat.replace(" ","_").replace("+","p").replace("→","r").replace("🌡️","T").replace("📉","D").replace("📈","U").replace("⚡","E")[:30]
@@ -3858,9 +3994,9 @@ def page_discover():
     # Standard categories
     st.markdown('<div class="disc-section-label">🌐 Standard Categories</div>', unsafe_allow_html=True)
     std_items = list(CATEGORIES.keys())
-    for row_start in range(0, len(std_items), 4):
-        cols = st.columns(4, gap="small")
-        for col_idx, cat in enumerate(std_items[row_start:row_start+4]):
+    for row_start in range(0, len(std_items), 3):
+        cols = st.columns(3, gap="medium")
+        for col_idx, cat in enumerate(std_items[row_start:row_start+3]):
             with cols[col_idx]:
                 is_active = cat==sel
                 btn_type = "primary" if is_active else "secondary"
@@ -3906,6 +4042,7 @@ def page_discover():
         </div>
         """, unsafe_allow_html=True)
         if gold_btn("Upgrade to Premium →", "disc_upgrade_bottom"): nav("pricing")
+    st.markdown('</div>', unsafe_allow_html=True)
 
 # ─────────────────────────────────────────────────────────────
 # PAGE: STOCK DETAIL
