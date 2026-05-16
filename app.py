@@ -2246,10 +2246,13 @@ NAV_CSS = """<style>
 .sw-nav .stButton>button[kind="primary"]{background:#2563eb !important;border-color:#2563eb !important;color:#fff !important;font-weight:700 !important;}
 </style>"""
 
-LOGO_HTML = """<div class="sw-logo-click-target">
-<span style="font-family:'JetBrains Mono',monospace;font-size:24px;font-weight:700;letter-spacing:-0.5px;">
-<span style="color:#e2e8f0;">Market</span><span style="color:#f59e0b;">Signal</span><span style="color:#e2e8f0;">Pro</span>
-</span></div>"""
+LOGO_HTML = """
+<div class="msp-logo-click-target">
+  <span class="msp-logo-text">
+    <span class="msp-logo-market">Market</span><span class="msp-logo-signal">Signal</span><span class="msp-logo-pro">Pro</span>
+  </span>
+</div>
+"""
 
 def render_logo_click(key,dest):
     st.markdown(LOGO_HTML, unsafe_allow_html=True)
