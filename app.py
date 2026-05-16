@@ -3159,8 +3159,13 @@ def page_signup():
                         # Log out the just-created session — require verification first
                         st.session_state.pop("user",None); st.session_state.pop("role",None)
                         ok2,info=_send_verification_email(email,code)
-                        if not ok2 and info and info.startswith("DEMO_CODE:"):
-                            st.session_state["_demo_code"]=info.split(":",1)[1]
+                        if not ok2:
+                            st.session_state["_email_error"] = info
+                            if info and info.startswith("DEMO_CODE:"):
+                                st.session_state["_demo_code"]=info.split(":",1)[1]
+                        else:
+                            st.session_state.pop("_email_error", None)
+                            st.session_state.pop("_demo_code", None)
                         nav("verify_email")
                     else: st.error(msg)
         if st.button("Already have an account? Sign In",key="s2l",use_container_width=True): nav("login")
@@ -3215,50 +3220,88 @@ def _send_push_notification(player_ids, title, message, url=None):
         return False, str(e)
 
 def _send_password_reset(email, reset_token):
-    """Send password reset email. Returns (True,None) or (False, info)."""
+    """Send password reset email through Resend. Returns (True, None) or (False, info)."""
     try:
-        resend_key = st.secrets.get("RESEND_API_KEY","")
-        app_url    = _get_app_url()
-        reset_url  = f"{app_url}/?reset_token={reset_token}&email={email}"
-        if resend_key:
-            import requests as _r
-            html = f"""<div style="font-family:Inter,sans-serif;background:#07090f;padding:40px;">
-                <h2 style="color:#2563eb;">Market<span style="color:#f59e0b;">Signal</span>Pro</h2>
-                <h3 style="color:#e2e8f0;">Reset your password</h3>
-                <p style="color:#6b7fa0;">Click below to reset. Expires in 1 hour.</p>
-                <a href="{reset_url}" style="display:inline-block;padding:12px 28px;background:#2563eb;color:#fff;text-decoration:none;border-radius:8px;font-weight:700;">Reset Password →</a>
-                <p style="color:#374f6e;font-size:11px;margin-top:16px;">Or copy: {reset_url}</p>
-            </div>"""
-            resp = _r.post("https://api.resend.com/emails",
-                headers={"Authorization":f"Bearer {resend_key}","Content-Type":"application/json"},
-                json={"from":"MarketSignalPro <support@marketsignalpro.com>","to":[email],
-                      "subject":"Reset your MarketSignalPro password","html":html},
-                timeout=10)
-            if resp.status_code in (200,201): return True, None
-    except Exception: pass
-    return False, f"DEMO_RESET:{reset_token}"
+        resend_key = st.secrets.get("RESEND_API_KEY", "")
+        app_url = _get_app_url()
+        reset_url = f"{app_url}/?reset_token={reset_token}&email={email}"
+
+        if not resend_key:
+            return False, "RESEND_API_KEY missing from Streamlit Secrets"
+
+        import requests as _r
+
+        html = f"""<div style="font-family:Inter,sans-serif;background:#07090f;padding:40px;">
+            <h2 style="color:#2563eb;">Market<span style="color:#f59e0b;">Signal</span>Pro</h2>
+            <h3 style="color:#e2e8f0;">Reset your password</h3>
+            <p style="color:#6b7fa0;">Click below to reset. Expires in 1 hour.</p>
+            <a href="{reset_url}" style="display:inline-block;padding:12px 28px;background:#2563eb;color:#fff;text-decoration:none;border-radius:8px;font-weight:700;">Reset Password →</a>
+            <p style="color:#374f6e;font-size:11px;margin-top:16px;">Or copy: {reset_url}</p>
+        </div>"""
+
+        resp = _r.post(
+            "https://api.resend.com/emails",
+            headers={
+                "Authorization": f"Bearer {resend_key}",
+                "Content-Type": "application/json",
+            },
+            json={
+                "from": "MarketSignalPro <support@marketsignalpro.com>",
+                "to": [email],
+                "subject": "Reset your MarketSignalPro password",
+                "html": html,
+            },
+            timeout=10,
+        )
+
+        if resp.status_code in (200, 201):
+            return True, None
+
+        return False, f"Resend error {resp.status_code}: {resp.text}"
+
+    except Exception as e:
+        return False, f"Email exception: {e}"
+
 
 def _send_verification_email(email, code):
-    """Send 6-digit email verification code. Falls back to demo mode."""
+    """Send 6-digit email verification code through Resend. Returns (True, None) or (False, info)."""
     try:
-        resend_key = st.secrets.get("RESEND_API_KEY","")
-        if resend_key:
-            import requests as _r
-            resp = _r.post("https://api.resend.com/emails",
-                headers={"Authorization":f"Bearer {resend_key}","Content-Type":"application/json"},
-                json={"from":"MarketSignalPro <support@marketsignalpro.com>","to":[email],
-                      "subject":"Your MarketSignalPro verification code",
-                      "html":f"""<div style="font-family:Inter,sans-serif;background:#07090f;padding:40px;color:#e2e8f0;">
-                        <h2>Market<span style="color:#f59e0b;">Signal</span>Pro</h2>
-                        <h3>Verify your email</h3>
-                        <div style="font-size:42px;font-weight:900;letter-spacing:8px;color:#2563eb;padding:20px;background:#0d1525;border-radius:12px;text-align:center;">{code}</div>
-                        <p style="color:#6b7fa0;margin-top:20px;">Expires in 10 minutes.</p>
-                      </div>"""},
-                timeout=10)
-            if resp.status_code in (200,201): return True,None
-            return False, f"Email error: {resp.text}"
-    except Exception: pass
-    return False, f"DEMO_CODE:{code}"
+        resend_key = st.secrets.get("RESEND_API_KEY", "")
+
+        if not resend_key:
+            return False, "RESEND_API_KEY missing from Streamlit Secrets"
+
+        import requests as _r
+
+        resp = _r.post(
+            "https://api.resend.com/emails",
+            headers={
+                "Authorization": f"Bearer {resend_key}",
+                "Content-Type": "application/json",
+            },
+            json={
+                "from": "MarketSignalPro <support@marketsignalpro.com>",
+                "to": [email],
+                "subject": "Your MarketSignalPro verification code",
+                "html": f"""<div style="font-family:Inter,sans-serif;background:#07090f;padding:40px;color:#e2e8f0;">
+                    <h2 style="color:#2563eb;">Market<span style="color:#f59e0b;">Signal</span>Pro</h2>
+                    <h3>Verify your email</h3>
+                    <p style="color:#6b7fa0;">Your verification code is:</p>
+                    <div style="font-size:42px;font-weight:900;letter-spacing:8px;color:#2563eb;padding:20px;background:#0d1525;border-radius:12px;text-align:center;">{code}</div>
+                    <p style="color:#6b7fa0;margin-top:20px;">This code expires in 10 minutes. If you didn't request this, ignore this email.</p>
+                </div>""",
+            },
+            timeout=10,
+        )
+
+        if resp.status_code in (200, 201):
+            return True, None
+
+        return False, f"Resend error {resp.status_code}: {resp.text}"
+
+    except Exception as e:
+        return False, f"Email exception: {e}"
+
 
 def page_forgot():
     render_topbar()
@@ -5873,8 +5916,13 @@ def page_settings():
                 st.session_state["_verify_email"] = email
                 st.session_state["_verify_user"] = {"name": st.session_state.user.get("name","")}
                 ok, info = _send_verification_email(email, code)
-                if not ok and info and info.startswith("DEMO_CODE:"):
-                    st.session_state["_demo_code"] = info.split(":",1)[1]
+                if not ok:
+                    st.session_state["_email_error"] = info
+                    if info and info.startswith("DEMO_CODE:"):
+                        st.session_state["_demo_code"] = info.split(":",1)[1]
+                else:
+                    st.session_state.pop("_email_error", None)
+                    st.session_state.pop("_demo_code", None)
                 nav("verify_email")
 
     with tabs[1]:
@@ -6502,33 +6550,44 @@ APP_URL = "https://your-app.streamlit.app"</pre>
 # EMAIL VERIFICATION
 # ─────────────────────────────────────────────────────────────
 def _send_verification_email(email, code):
-    """
-    Send verification email. Requires RESEND_API_KEY or SENDGRID_API_KEY in Secrets.
-    Falls back to simulated mode (shows code in UI) if not configured.
-    Returns (True, None) or (False, error_msg).
-    """
-    # Try Resend
+    """Send 6-digit email verification code through Resend. Returns (True, None) or (False, info)."""
     try:
-        resend_key = st.secrets.get("RESEND_API_KEY","")
-        if resend_key:
-            import requests as _r
-            resp = _r.post("https://api.resend.com/emails",
-                headers={"Authorization":f"Bearer {resend_key}","Content-Type":"application/json"},
-                json={"from":"MarketSignalPro <support@marketsignalpro.com>",
-                      "to":[email],
-                      "subject":"Your MarketSignalPro verification code",
-                      "html":f"""<div style="font-family:Inter,sans-serif;background:#07090f;color:#e2e8f0;padding:40px;">
-                        <h2 style="color:#2563eb;">Market<span style="color:#f59e0b;">Signal</span>Pro</h2>
-                        <h3>Verify your email</h3>
-                        <p style="color:#6b7fa0;">Your verification code is:</p>
-                        <div style="font-size:36px;font-weight:800;letter-spacing:8px;color:#2563eb;padding:20px;background:#0d1525;border-radius:12px;text-align:center;">{code}</div>
-                        <p style="color:#6b7fa0;margin-top:20px;">This code expires in 10 minutes. If you didn't request this, ignore this email.</p>
-                      </div>"""})
-            if resp.status_code in (200,201): return True,None
-            return False, f"Email send failed: {resp.text}"
-    except: pass
-    # Simulated — show code in UI
-    return False, f"DEMO_CODE:{code}"
+        resend_key = st.secrets.get("RESEND_API_KEY", "")
+
+        if not resend_key:
+            return False, "RESEND_API_KEY missing from Streamlit Secrets"
+
+        import requests as _r
+
+        resp = _r.post(
+            "https://api.resend.com/emails",
+            headers={
+                "Authorization": f"Bearer {resend_key}",
+                "Content-Type": "application/json",
+            },
+            json={
+                "from": "MarketSignalPro <support@marketsignalpro.com>",
+                "to": [email],
+                "subject": "Your MarketSignalPro verification code",
+                "html": f"""<div style="font-family:Inter,sans-serif;background:#07090f;padding:40px;color:#e2e8f0;">
+                    <h2 style="color:#2563eb;">Market<span style="color:#f59e0b;">Signal</span>Pro</h2>
+                    <h3>Verify your email</h3>
+                    <p style="color:#6b7fa0;">Your verification code is:</p>
+                    <div style="font-size:42px;font-weight:900;letter-spacing:8px;color:#2563eb;padding:20px;background:#0d1525;border-radius:12px;text-align:center;">{code}</div>
+                    <p style="color:#6b7fa0;margin-top:20px;">This code expires in 10 minutes. If you didn't request this, ignore this email.</p>
+                </div>""",
+            },
+            timeout=10,
+        )
+
+        if resp.status_code in (200, 201):
+            return True, None
+
+        return False, f"Resend error {resp.status_code}: {resp.text}"
+
+    except Exception as e:
+        return False, f"Email exception: {e}"
+
 
 def page_verify_email():
     render_topbar()
@@ -6541,6 +6600,9 @@ def page_verify_email():
             <div style="font-size:13px;color:#374f6e;">We sent a 6-digit verification code to<br>
             <strong style="color:#93b4fd;">{email}</strong></div>
         </div>""",unsafe_allow_html=True)
+
+        if st.session_state.get("_email_error"):
+            st.error(st.session_state["_email_error"])
 
         # Show demo code if email not configured
         demo = st.session_state.get("_demo_code","")
@@ -6565,7 +6627,7 @@ def page_verify_email():
                     udata = st.session_state.get("_verify_user",{})
                     st.session_state.user = {"email":uemail,"name":udata.get("name","")}
                     st.session_state.role = "free"
-                    for k in ["_verify_code","_verify_email","_verify_user","_demo_code"]:
+                    for k in ["_verify_code","_verify_email","_verify_user","_demo_code","_email_error"]:
                         st.session_state.pop(k,None)
                     st.session_state["_signup_success"] = udata.get("name","")
                     st.success("✅ Email verified! Welcome to MarketSignalPro.")
@@ -6579,13 +6641,19 @@ def page_verify_email():
             code = str(random.randint(100000,999999))
             st.session_state["_verify_code"] = code
             ok,info = _send_verification_email(email, code)
-            if not ok and info and info.startswith("DEMO_CODE:"):
-                st.session_state["_demo_code"] = info.split(":",1)[1]
-                st.success("Code regenerated (demo mode — shown above)")
-            elif ok: st.success("✅ New code sent!")
-            else: st.error(f"Send failed: {info}")
+            if not ok:
+                st.session_state["_email_error"] = info
+                if info and info.startswith("DEMO_CODE:"):
+                    st.session_state["_demo_code"] = info.split(":",1)[1]
+                    st.success("Code regenerated (demo mode — shown above)")
+                else:
+                    st.error(f"Send failed: {info}")
+            else:
+                st.session_state.pop("_email_error", None)
+                st.session_state.pop("_demo_code", None)
+                st.success("✅ New code sent!")
         if st.button("← Back to Sign Up", key="v_back"):
-            for k in ["_verify_code","_verify_email","_verify_user","_demo_code"]:
+            for k in ["_verify_code","_verify_email","_verify_user","_demo_code","_email_error"]:
                 st.session_state.pop(k,None)
             nav("signup")
 
