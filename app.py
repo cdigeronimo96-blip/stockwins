@@ -8,6 +8,7 @@ import requests, pandas as pd, ta, yfinance as yf
 import hashlib, time, random, math, sys, os
 from datetime import datetime, timedelta
 from textwrap import dedent as _dedent
+import html as _html
 
 # Signal Performance Engine
 try:
@@ -1488,6 +1489,19 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
+
+
+st.markdown("""
+<style>
+/* MSP hero/category sizing refinement */
+.msp-signal-grid-wrap { width:min(1120px, calc(100vw - 56px)) !important; max-width:1120px !important; margin-left:auto !important; margin-right:auto !important; overflow:visible !important; }
+.msp-signal-grid { display:grid !important; grid-template-columns:repeat(3, minmax(260px, 1fr)) !important; gap:10px 14px !important; align-items:stretch !important; }
+.msp-signal-card { min-height:76px !important; height:auto !important; }
+@media (max-width:900px) { .msp-signal-grid { grid-template-columns:repeat(2, minmax(0, 1fr)) !important; } }
+@media (max-width:560px) { .msp-signal-grid { grid-template-columns:1fr !important; } }
+</style>
+""", unsafe_allow_html=True)
+
 # ─────────────────────────────────────────────────────────────
 # CONSTANTS
 # ─────────────────────────────────────────────────────────────
@@ -2723,41 +2737,61 @@ def page_landing():
     """, unsafe_allow_html=True)
 
     # ── HERO ──
-    # Use one real HTML container instead of trying to wrap Streamlit columns.
-    # This prevents the left side from clipping and keeps the demo card at a natural size.
+    # Natural-size hero with an auto-rotating/selectable preview.
+    # The shell is only a max-width guardrail; the cards keep their designed size.
+    hero_panels = [
+        ("📊 Market Overview", "Find Trending Stocks<br><span>Before the Crowd</span>", DEMO[0]),
+        ("💥 Squeeze Radar", "Scan For Short Squeeze<br><span>Candidates</span>", DEMO[1]),
+        ("💡 Smart Insights", "Plain-English Signals<br><span>That Make Sense</span>", DEMO[2]),
+        ("🎯 Score Breakdown", "Understand Every<br><span>Signal Score</span>", DEMO_SCORE),
+        ("📈 BI Analytics", "BI Analytics &<br><span>Opportunity Matrix</span>", DEMO_BI),
+    ]
+    hero_tabs_html = "".join(
+        f'<button type="button" class="msp-hero-tab {"active" if i == 0 else ""}" data-msp-slide="{i}">{label}</button>'
+        for i, (label, _, _) in enumerate(hero_panels)
+    )
+    hero_dots_html = "".join(
+        f'<button type="button" class="msp-hero-dot {"active" if i == 0 else ""}" data-msp-slide="{i}" aria-label="Preview {i+1}"></button>'
+        for i in range(len(hero_panels))
+    )
+    hero_slides_html = "".join(
+        f'<div class="msp-hero-slide {"active" if i == 0 else ""}" data-msp-slide-panel="{i}">'         f'<div class="msp-hero-title">{title}</div><div class="msp-hero-preview-card">{html}</div></div>'
+        for i, (_, title, html) in enumerate(hero_panels)
+    )
+
     hero_html = _dedent(f"""
     <style>
       .msp-landing-hero {{
-        width: min(1180px, calc(100vw - 56px));
-        max-width: 1180px;
+        width: min(1320px, calc(100vw - 72px));
+        max-width: 1320px;
         margin: 0 auto;
-        padding: 34px 0 36px;
+        padding: 46px 0 42px;
         display: grid;
-        grid-template-columns: minmax(320px, 430px) minmax(460px, 560px);
-        gap: 76px;
+        grid-template-columns: minmax(390px, 500px) minmax(560px, 640px);
+        gap: 86px;
         align-items: start;
         overflow: visible;
       }}
-      .msp-hero-copy {{ min-width:0; padding-top: 8px; }}
+      .msp-hero-copy {{ min-width:0; padding-top: 4px; }}
       .msp-hero-eyebrow {{
         font-size: 11px; font-weight: 800; color: {BLUE};
-        letter-spacing: 2.6px; text-transform: uppercase; margin-bottom: 16px;
+        letter-spacing: 2.7px; text-transform: uppercase; margin-bottom: 18px;
       }}
       .msp-hero-headline {{
-        font-size: 43px; line-height: 1.05; letter-spacing: -1.7px;
-        font-weight: 950; color: #f1f5f9; margin: 0 0 16px;
+        font-size: 50px; line-height: 1.03; letter-spacing: -2px;
+        font-weight: 950; color: #f1f5f9; margin: 0 0 20px;
       }}
       .msp-hero-headline .blue {{ color:{BLUE}; }}
       .msp-hero-headline .gold {{ color:{GOLD}; }}
       .msp-hero-subcopy {{
-        color:#3d5270; font-size:15px; line-height:1.75;
-        max-width: 420px; margin-bottom: 30px;
+        color:#3d5270; font-size:16px; line-height:1.75;
+        max-width: 470px; margin-bottom: 32px;
       }}
-      .msp-hero-actions {{ width: min(420px, 100%); }}
+      .msp-hero-actions {{ width: min(430px, 100%); }}
       .msp-hero-primary, .msp-hero-secondary {{
         display:flex; align-items:center; justify-content:center;
-        width:100%; min-height:46px; border-radius:9px;
-        font-size:14px; font-weight:750; text-decoration:none !important;
+        width:100%; min-height:48px; border-radius:9px;
+        font-size:14px; font-weight:800; text-decoration:none !important;
         box-sizing:border-box;
       }}
       .msp-hero-primary {{ background:{BLUE}; color:white !important; border:1px solid {BLUE}; }}
@@ -2769,19 +2803,41 @@ def page_landing():
         display:flex; align-items:center; justify-content:center; gap:13px; flex-wrap:wrap;
         margin-top:18px; font-size:11px; color:#4a5e7a;
       }}
-      .msp-hero-preview {{ width: 560px; max-width:100%; min-width:0; justify-self:end; overflow:hidden; }}
-      .msp-hero-preview-card {{ width:100%; max-width:560px; overflow:hidden; }}
+      .msp-hero-preview {{ width: 640px; max-width:100%; min-width:0; justify-self:end; overflow:visible; padding-top:0; }}
+      .msp-hero-tabs {{ display:flex; flex-wrap:wrap; gap:12px 18px; margin-bottom:10px; align-items:center; }}
+      .msp-hero-tab {{
+        appearance:none; border:none; background:transparent; cursor:pointer;
+        color:#374f6e; font-family:Inter,sans-serif; font-size:13px; font-weight:600;
+        padding:0 0 7px; border-bottom:2px solid transparent; white-space:nowrap;
+      }}
+      .msp-hero-tab.active {{ color:#e2e8f0; font-weight:850; border-bottom-color:#2563eb; }}
+      .msp-hero-dots {{ display:flex; gap:7px; margin:5px 0 13px; }}
+      .msp-hero-dot {{
+        width:7px; height:7px; border-radius:50%; background:rgba(255,255,255,.16);
+        display:block; border:0; padding:0; cursor:pointer;
+      }}
+      .msp-hero-dot.active {{ width:21px; border-radius:5px; background:#2563eb; }}
+      .msp-hero-title {{ font-size:26px; font-weight:950; color:#f1f5f9; line-height:1.12; letter-spacing:-.7px; margin-bottom:14px; }}
+      .msp-hero-title span {{ color:#2563eb; }}
+      .msp-hero-slide {{ display:none; }}
+      .msp-hero-slide.active {{ display:block; }}
+      .msp-hero-preview-card {{ width:100%; max-width:640px; overflow:hidden; }}
       .msp-hero-preview-card > div {{ max-width:100% !important; width:100% !important; box-sizing:border-box !important; }}
       .msp-hero-preview-card * {{ box-sizing:border-box !important; }}
-      @media (max-width: 980px) {{
-        .msp-landing-hero {{ width:calc(100vw - 28px); grid-template-columns:1fr; gap:26px; padding:24px 0 28px; }}
+      @media (max-width: 1120px) {{
+        .msp-landing-hero {{ width:calc(100vw - 36px); grid-template-columns:1fr; gap:34px; padding:30px 0 34px; }}
         .msp-hero-copy {{ text-align:center; }}
         .msp-hero-subcopy, .msp-hero-actions {{ margin-left:auto; margin-right:auto; }}
-        .msp-hero-preview {{ justify-self:center; width:100%; }}
+        .msp-hero-preview {{ justify-self:center; width:min(640px, 100%); }}
+        .msp-hero-headline {{ font-size:38px; }}
+      }}
+      @media (max-width: 560px) {{
+        .msp-landing-hero {{ width:calc(100vw - 24px); }}
         .msp-hero-headline {{ font-size:32px; }}
+        .msp-hero-preview {{ display:none; }}
       }}
     </style>
-    <section class="msp-landing-hero">
+    <section class="msp-landing-hero" id="msp-hero-carousel">
       <div class="msp-hero-copy">
         <div class="msp-hero-eyebrow">Smart Stock Discovery Platform</div>
         <h1 class="msp-hero-headline">Spot Market<br>Opportunities<br><span class="blue">Before They</span><br><span class="gold">Get Crowded</span></h1>
@@ -2794,18 +2850,43 @@ def page_landing():
         </div>
       </div>
       <div class="msp-hero-preview">
-        <div class="msp-hero-tabs">
-          <span class="active">📊 Market Overview</span>
-          <span>💥 Squeeze Radar</span>
-          <span>💡 Smart Insights</span>
-          <span>🎯 Score Breakdown</span>
-          <span>📈 BI Analytics</span>
-        </div>
-        <div class="msp-hero-dots"><span class="active"></span><span></span><span></span><span></span><span></span></div>
-        <div class="msp-hero-title">Find Trending Stocks<br><span>Before the Crowd</span></div>
-        <div class="msp-hero-preview-card">{DEMO[0]}</div>
+        <div class="msp-hero-tabs">{hero_tabs_html}</div>
+        <div class="msp-hero-dots">{hero_dots_html}</div>
+        <div class="msp-hero-slides">{hero_slides_html}</div>
       </div>
     </section>
+    <script>
+    (function() {{
+      const root = document.getElementById('msp-hero-carousel');
+      if (!root || root.dataset.ready === '1') return;
+      root.dataset.ready = '1';
+      const tabs = Array.from(root.querySelectorAll('.msp-hero-tab'));
+      const dots = Array.from(root.querySelectorAll('.msp-hero-dot'));
+      const slides = Array.from(root.querySelectorAll('.msp-hero-slide'));
+      let idx = 0;
+      let timer = null;
+      function show(next) {{
+        idx = (next + slides.length) % slides.length;
+        tabs.forEach((el, i) => el.classList.toggle('active', i === idx));
+        dots.forEach((el, i) => el.classList.toggle('active', i === idx));
+        slides.forEach((el, i) => el.classList.toggle('active', i === idx));
+      }}
+      function start() {{
+        if (timer) clearInterval(timer);
+        timer = setInterval(() => show(idx + 1), 4200);
+      }}
+      [...tabs, ...dots].forEach(el => el.addEventListener('click', function(e) {{
+        e.preventDefault();
+        const n = parseInt(this.dataset.mspSlide || '0', 10);
+        show(n);
+        start();
+      }}));
+      root.addEventListener('mouseenter', () => timer && clearInterval(timer));
+      root.addEventListener('mouseleave', start);
+      show(0);
+      start();
+    }})();
+    </script>
     """).strip()
     st.markdown(hero_html, unsafe_allow_html=True)
 
@@ -3027,11 +3108,13 @@ def page_landing():
     cards_html = ""
     for cat,(desc,tier) in cg_items:
         c = color_map.get(cat, BLUE)
+        cat_safe = _html.escape(cat)
+        desc_safe = _html.escape(desc)
         tier_b = (f'<span class="sw-signal-card-badge pro">⭐ PRO</span>' if tier=="premium"
                   else '<span class="sw-signal-card-badge free">FREE</span>')
         cards_html += (f'<div class="msp-signal-card" style="border-left-color:{c};">'
-                       f'<div class="msp-signal-card-head"><div class="msp-signal-card-title">{cat}</div>{tier_b}</div>'
-                       f'<div class="msp-signal-card-desc">{desc}</div></div>')
+                       f'<div class="msp-signal-card-head"><div class="msp-signal-card-title">{cat_safe}</div>{tier_b}</div>'
+                       f'<div class="msp-signal-card-desc">{desc_safe}</div></div>')
     st.markdown(_dedent(f"""
     <div class="msp-signal-grid-wrap">
       <div class="msp-signal-grid">{cards_html}</div>
