@@ -2761,14 +2761,16 @@ def page_landing():
 
     hero_html = _dedent(f"""
     <style>
+      html, body { margin:0; padding:0; background:#07090f; color:#d1d9e6; font-family:Inter, Arial, sans-serif; overflow:hidden; }
+      * { box-sizing:border-box; }
       .msp-landing-hero {{
-        width: min(1320px, calc(100vw - 72px));
-        max-width: 1320px;
+        width: min(1380px, calc(100vw - 44px));
+        max-width: 1380px;
         margin: 0 auto;
-        padding: 46px 0 42px;
+        padding: 34px 0 34px;
         display: grid;
-        grid-template-columns: minmax(390px, 500px) minmax(560px, 640px);
-        gap: 86px;
+        grid-template-columns: minmax(420px, 520px) minmax(600px, 680px);
+        gap: 84px;
         align-items: start;
         overflow: visible;
       }}
@@ -2821,7 +2823,7 @@ def page_landing():
       .msp-hero-title span {{ color:#2563eb; }}
       .msp-hero-slide {{ display:none; }}
       .msp-hero-slide.active {{ display:block; }}
-      .msp-hero-preview-card {{ width:100%; max-width:640px; overflow:hidden; }}
+      .msp-hero-preview-card {{ width:100%; max-width:680px; overflow:hidden; }}
       .msp-hero-preview-card > div {{ max-width:100% !important; width:100% !important; box-sizing:border-box !important; }}
       .msp-hero-preview-card * {{ box-sizing:border-box !important; }}
       @media (max-width: 1120px) {{
@@ -2843,9 +2845,9 @@ def page_landing():
         <h1 class="msp-hero-headline">Spot Market<br>Opportunities<br><span class="blue">Before They</span><br><span class="gold">Get Crowded</span></h1>
         <div class="msp-hero-subcopy">Discover trending stocks, squeeze candidates, and momentum shifts using our proprietary 17-signal composite scoring.</div>
         <div class="msp-hero-actions">
-          <a class="msp-hero-primary" href="?topbar_nav=signup">🚀&nbsp; Create Free Account</a>
+          <a class="msp-hero-primary" href="?topbar_nav=signup" target="_top">🚀&nbsp; Create Free Account</a>
           <div class="msp-hero-small">Already have an account?</div>
-          <a class="msp-hero-secondary" href="?topbar_nav=login">Sign In</a>
+          <a class="msp-hero-secondary" href="?topbar_nav=login" target="_top">Sign In</a>
           <div class="msp-hero-trust"><span>✓ Free forever plan</span><span>·</span><span>✓ No credit card</span><span>·</span><span>✓ Setup in 30 seconds</span></div>
         </div>
       </div>
@@ -2888,7 +2890,8 @@ def page_landing():
     }})();
     </script>
     """).strip()
-    st.markdown(hero_html, unsafe_allow_html=True)
+    import streamlit.components.v1 as components
+    components.html(hero_html, height=650, scrolling=False)
 
     # ── Trust bar ──
     st.markdown(f"""
@@ -3115,11 +3118,27 @@ def page_landing():
         cards_html += (f'<div class="msp-signal-card" style="border-left-color:{c};">'
                        f'<div class="msp-signal-card-head"><div class="msp-signal-card-title">{cat_safe}</div>{tier_b}</div>'
                        f'<div class="msp-signal-card-desc">{desc_safe}</div></div>')
-    st.markdown(_dedent(f"""
+    categories_html = _dedent(f"""
+    <style>
+      html, body {{ margin:0; padding:0; background:#07090f; color:#d1d9e6; font-family:Inter, Arial, sans-serif; overflow:hidden; }}
+      * {{ box-sizing:border-box; }}
+      .msp-signal-grid-wrap {{ width:min(1180px, calc(100vw - 44px)); max-width:1180px; margin:0 auto; }}
+      .msp-signal-grid {{ display:grid; grid-template-columns:repeat(3, minmax(0, 1fr)); gap:12px 16px; align-items:stretch; }}
+      .msp-signal-card {{ background:#0d1525; border:1px solid rgba(255,255,255,.08); border-left:3px solid #2563eb; border-radius:10px; padding:12px 14px; min-height:78px; }}
+      .msp-signal-card-head {{ display:flex; align-items:flex-start; justify-content:space-between; gap:8px; margin-bottom:6px; }}
+      .msp-signal-card-title {{ font-size:13px; font-weight:800; color:#e2e8f0; line-height:1.25; }}
+      .msp-signal-card-desc {{ font-size:11px; color:#374f6e; line-height:1.45; }}
+      .sw-signal-card-badge {{ font-size:9px; font-weight:800; padding:2px 6px; border-radius:3px; white-space:nowrap; }}
+      .sw-signal-card-badge.pro {{ color:#f59e0b; background:rgba(245,158,11,.12); border:1px solid rgba(245,158,11,.3); }}
+      .sw-signal-card-badge.free {{ color:#4ade80; background:rgba(34,197,94,.1); border:1px solid rgba(34,197,94,.3); }}
+      @media (max-width:900px) {{ .msp-signal-grid {{ grid-template-columns:repeat(2, minmax(0, 1fr)); }} }}
+      @media (max-width:560px) {{ .msp-signal-grid {{ grid-template-columns:1fr; }} }}
+    </style>
     <div class="msp-signal-grid-wrap">
       <div class="msp-signal-grid">{cards_html}</div>
     </div>
-    """).strip(), unsafe_allow_html=True)
+    """).strip()
+    components.html(categories_html, height=520, scrolling=False)
 
     _,pc,_=st.columns([2,1,2])
     with pc:
