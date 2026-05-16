@@ -7,6 +7,7 @@ import streamlit as st
 import requests, pandas as pd, ta, yfinance as yf
 import hashlib, time, random, math, sys, os
 from datetime import datetime, timedelta
+from textwrap import dedent as _dedent
 
 # Signal Performance Engine
 try:
@@ -1476,6 +1477,17 @@ button[aria-label="👑 Unlock Premium Access — Start Today"] {
 </style>
 """, unsafe_allow_html=True)
 
+
+
+st.markdown("""
+<style>
+/* MSP emergency layout guardrails */
+.msp-signal-grid-wrap, .msp-landing-hero { overflow-x: hidden !important; }
+.msp-signal-grid { width:100% !important; }
+.msp-signal-card pre, .msp-signal-card code, .msp-hero-preview pre, .msp-hero-preview code { display:none !important; }
+</style>
+""", unsafe_allow_html=True)
+
 # ─────────────────────────────────────────────────────────────
 # CONSTANTS
 # ─────────────────────────────────────────────────────────────
@@ -2711,50 +2723,91 @@ def page_landing():
     """, unsafe_allow_html=True)
 
     # ── HERO ──
-    p_idx=st.session_state.get("hero_panel",0)
-    st.markdown('<div class="sw-hero-row">', unsafe_allow_html=True)
-    hl,hr=st.columns([5,5],gap="large")
-    with hl:
-        st.markdown(f"""
-        <div class="sw-hero-left-block" style="padding:48px 0 32px 48px;">
-            <div style="font-size:11px;font-weight:700;color:{BLUE};letter-spacing:2.5px;text-transform:uppercase;margin-bottom:16px;">Smart Stock Discovery Platform</div>
-            <div class="hero-h1">Spot Market<br>Opportunities<br><span class="hi">Before They</span><br><span class="hg">Get Crowded</span></div>
-            <div class="hero-sub">Discover trending stocks, squeeze candidates, and momentum shifts using our proprietary 17-signal composite scoring.</div>
+    # Use one real HTML container instead of trying to wrap Streamlit columns.
+    # This prevents the left side from clipping and keeps the demo card at a natural size.
+    hero_html = _dedent(f"""
+    <style>
+      .msp-landing-hero {{
+        width: min(1180px, calc(100vw - 56px));
+        max-width: 1180px;
+        margin: 0 auto;
+        padding: 34px 0 36px;
+        display: grid;
+        grid-template-columns: minmax(320px, 430px) minmax(460px, 560px);
+        gap: 76px;
+        align-items: start;
+        overflow: visible;
+      }}
+      .msp-hero-copy {{ min-width:0; padding-top: 8px; }}
+      .msp-hero-eyebrow {{
+        font-size: 11px; font-weight: 800; color: {BLUE};
+        letter-spacing: 2.6px; text-transform: uppercase; margin-bottom: 16px;
+      }}
+      .msp-hero-headline {{
+        font-size: 43px; line-height: 1.05; letter-spacing: -1.7px;
+        font-weight: 950; color: #f1f5f9; margin: 0 0 16px;
+      }}
+      .msp-hero-headline .blue {{ color:{BLUE}; }}
+      .msp-hero-headline .gold {{ color:{GOLD}; }}
+      .msp-hero-subcopy {{
+        color:#3d5270; font-size:15px; line-height:1.75;
+        max-width: 420px; margin-bottom: 30px;
+      }}
+      .msp-hero-actions {{ width: min(420px, 100%); }}
+      .msp-hero-primary, .msp-hero-secondary {{
+        display:flex; align-items:center; justify-content:center;
+        width:100%; min-height:46px; border-radius:9px;
+        font-size:14px; font-weight:750; text-decoration:none !important;
+        box-sizing:border-box;
+      }}
+      .msp-hero-primary {{ background:{BLUE}; color:white !important; border:1px solid {BLUE}; }}
+      .msp-hero-primary:hover {{ background:#1d4ed8; box-shadow:0 8px 26px rgba(37,99,235,.32); }}
+      .msp-hero-secondary {{ background:rgba(255,255,255,.045); color:#cfe2ff !important; border:1px solid rgba(255,255,255,.18); }}
+      .msp-hero-secondary:hover {{ border-color:rgba(37,99,235,.55); background:rgba(37,99,235,.12); }}
+      .msp-hero-small {{ text-align:center; font-size:12px; color:#6b7fa0; padding:14px 0 8px; }}
+      .msp-hero-trust {{
+        display:flex; align-items:center; justify-content:center; gap:13px; flex-wrap:wrap;
+        margin-top:18px; font-size:11px; color:#4a5e7a;
+      }}
+      .msp-hero-preview {{ width: 560px; max-width:100%; min-width:0; justify-self:end; overflow:hidden; }}
+      .msp-hero-preview-card {{ width:100%; max-width:560px; overflow:hidden; }}
+      .msp-hero-preview-card > div {{ max-width:100% !important; width:100% !important; box-sizing:border-box !important; }}
+      .msp-hero-preview-card * {{ box-sizing:border-box !important; }}
+      @media (max-width: 980px) {{
+        .msp-landing-hero {{ width:calc(100vw - 28px); grid-template-columns:1fr; gap:26px; padding:24px 0 28px; }}
+        .msp-hero-copy {{ text-align:center; }}
+        .msp-hero-subcopy, .msp-hero-actions {{ margin-left:auto; margin-right:auto; }}
+        .msp-hero-preview {{ justify-self:center; width:100%; }}
+        .msp-hero-headline {{ font-size:32px; }}
+      }}
+    </style>
+    <section class="msp-landing-hero">
+      <div class="msp-hero-copy">
+        <div class="msp-hero-eyebrow">Smart Stock Discovery Platform</div>
+        <h1 class="msp-hero-headline">Spot Market<br>Opportunities<br><span class="blue">Before They</span><br><span class="gold">Get Crowded</span></h1>
+        <div class="msp-hero-subcopy">Discover trending stocks, squeeze candidates, and momentum shifts using our proprietary 17-signal composite scoring.</div>
+        <div class="msp-hero-actions">
+          <a class="msp-hero-primary" href="?topbar_nav=signup">🚀&nbsp; Create Free Account</a>
+          <div class="msp-hero-small">Already have an account?</div>
+          <a class="msp-hero-secondary" href="?topbar_nav=login">Sign In</a>
+          <div class="msp-hero-trust"><span>✓ Free forever plan</span><span>·</span><span>✓ No credit card</span><span>·</span><span>✓ Setup in 30 seconds</span></div>
         </div>
-        """, unsafe_allow_html=True)
-
-        # ── Single CTA section (works on all screens) ──
-        if st.button("🚀 Create Free Account", key="h_su", type="primary", use_container_width=True): nav("signup")
-        st.markdown('<div style="text-align:center;font-size:13px;color:#6b7fa0;padding:14px 0 6px;">Already have an account?</div>', unsafe_allow_html=True)
-        if st.button("Sign In", key="h_login", use_container_width=True): nav("login")
-
-        # Trust line under CTA
-        st.markdown(f"""
-        <div style="display:flex;align-items:center;justify-content:center;gap:14px;margin-top:18px;font-size:11px;color:#4a5e7a;flex-wrap:wrap;">
-            <span>✓ Free forever plan</span>
-            <span>·</span>
-            <span>✓ No credit card</span>
-            <span>·</span>
-            <span>✓ Setup in 30 seconds</span>
+      </div>
+      <div class="msp-hero-preview">
+        <div class="msp-hero-tabs">
+          <span class="active">📊 Market Overview</span>
+          <span>💥 Squeeze Radar</span>
+          <span>💡 Smart Insights</span>
+          <span>🎯 Score Breakdown</span>
+          <span>📈 BI Analytics</span>
         </div>
-        """, unsafe_allow_html=True)
-
-    with hr:
-        st.markdown(f"""
-        <div class="sw-hero-demo-wrap">
-            <div class="msp-hero-tabs">
-                <span class="active">📊 Market Overview</span>
-                <span>💥 Squeeze Radar</span>
-                <span>💡 Smart Insights</span>
-                <span>🎯 Score Breakdown</span>
-                <span>📈 BI Analytics</span>
-            </div>
-            <div class="msp-hero-dots"><span class="active"></span><span></span><span></span><span></span><span></span></div>
-            <div class="msp-hero-title">Find Trending Stocks<br><span>Before the Crowd</span></div>
-            <div class="msp-hero-demo-card">{DEMO[0]}</div>
-        </div>
-        """, unsafe_allow_html=True)
-    st.markdown('</div>', unsafe_allow_html=True)  # close sw-hero-row
+        <div class="msp-hero-dots"><span class="active"></span><span></span><span></span><span></span><span></span></div>
+        <div class="msp-hero-title">Find Trending Stocks<br><span>Before the Crowd</span></div>
+        <div class="msp-hero-preview-card">{DEMO[0]}</div>
+      </div>
+    </section>
+    """).strip()
+    st.markdown(hero_html, unsafe_allow_html=True)
 
     # ── Trust bar ──
     st.markdown(f"""
@@ -2951,15 +3004,15 @@ def page_landing():
     st.markdown("<br>",unsafe_allow_html=True)
 
     # ── Composite categories grid ──
-    st.markdown(f"""
-    <div style="padding:0 48px;">
-        <div style="display:flex;align-items:center;gap:12px;margin-bottom:8px;">
-            <div style="font-size:18px;font-weight:800;color:#e2e8f0;">🎯 Our Proprietary Signal Categories</div>
-            <span style="background:rgba(168,85,247,0.15);color:#c084fc;border:1px solid rgba(168,85,247,0.35);font-size:10px;font-weight:700;padding:3px 10px;border-radius:20px;white-space:nowrap;">✨ Unique to MarketSignalPro</span>
-        </div>
-        <div style="font-size:13px;color:#374f6e;margin-bottom:18px;">We combine multiple independent data signals into composite categories you won't find anywhere else. Each one has a specific multi-factor entry criterion.</div>
+    st.markdown(_dedent(f"""
+    <div class="msp-signal-grid-wrap" style="margin-top:8px;margin-bottom:18px;">
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:8px;flex-wrap:wrap;">
+        <div style="font-size:18px;font-weight:800;color:#e2e8f0;">🎯 Our Proprietary Signal Categories</div>
+        <span style="background:rgba(168,85,247,0.15);color:#c084fc;border:1px solid rgba(168,85,247,0.35);font-size:10px;font-weight:700;padding:3px 10px;border-radius:20px;white-space:nowrap;">✨ Unique to MarketSignalPro</span>
+      </div>
+      <div style="font-size:13px;color:#374f6e;line-height:1.6;">We combine multiple independent data signals into composite categories you won't find anywhere else. Each one has a specific multi-factor entry criterion.</div>
     </div>
-    """, unsafe_allow_html=True)
+    """).strip(), unsafe_allow_html=True)
 
     color_map={
         "🔥💥 Squeeze + Buzz":"#ef4444","💡 Hidden Movers":"#3b82f6","🎭 Social Catalyst":"#f97316",
@@ -2976,19 +3029,14 @@ def page_landing():
         c = color_map.get(cat, BLUE)
         tier_b = (f'<span class="sw-signal-card-badge pro">⭐ PRO</span>' if tier=="premium"
                   else '<span class="sw-signal-card-badge free">FREE</span>')
-        cards_html += f"""
-        <div class="msp-signal-card" style="border-left-color:{c};">
-            <div class="msp-signal-card-head">
-                <div class="msp-signal-card-title">{cat}</div>{tier_b}
-            </div>
-            <div class="msp-signal-card-desc">{desc}</div>
-        </div>
-        """
-    st.markdown(f"""
+        cards_html += (f'<div class="msp-signal-card" style="border-left-color:{c};">'
+                       f'<div class="msp-signal-card-head"><div class="msp-signal-card-title">{cat}</div>{tier_b}</div>'
+                       f'<div class="msp-signal-card-desc">{desc}</div></div>')
+    st.markdown(_dedent(f"""
     <div class="msp-signal-grid-wrap">
-        <div class="msp-signal-grid">{cards_html}</div>
+      <div class="msp-signal-grid">{cards_html}</div>
     </div>
-    """, unsafe_allow_html=True)
+    """).strip(), unsafe_allow_html=True)
 
     _,pc,_=st.columns([2,1,2])
     with pc:
