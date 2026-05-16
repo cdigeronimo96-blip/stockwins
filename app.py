@@ -1,5 +1,5 @@
 # ═══════════════════════════════════════════════════════════════
-# STOCKWINS v7.0 — Premium Fintech SaaS
+# MARKETSIGNALPRO v7.0 — Premium Fintech SaaS
 # "I trust this. I understand this. I want more."
 # ═══════════════════════════════════════════════════════════════
 
@@ -50,7 +50,7 @@ except ImportError:
     HAS_PLOTLY = False
 
 st.set_page_config(
-    page_title="StockWins | Spot Market Opportunities First",
+    page_title="MarketSignalPro | AI-Powered Stock Signals",
     page_icon="📈", layout="wide",
     initial_sidebar_state="auto",
 )
@@ -58,7 +58,7 @@ st.set_page_config(
 # ─────────────────────────────────────────────────────────────
 # PROGRESSIVE WEB APP (PWA) — Native app experience
 # ─────────────────────────────────────────────────────────────
-# Embedded SVG icon (no external hosting needed) — StockWins logo as SVG → base64
+# Embedded SVG icon (no external hosting needed) — MarketSignalPro logo as SVG → base64
 _SW_ICON_SVG = '''<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
 <defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
 <stop offset="0" stop-color="#1d4ed8"/><stop offset="1" stop-color="#2563eb"/>
@@ -67,7 +67,7 @@ _SW_ICON_SVG = '''<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
 <path d="M120 340 L120 380 L392 380 L392 340 L120 340 Z" fill="#fff" opacity=".3"/>
 <path d="M140 320 L200 240 L240 280 L320 160 L380 220 L380 240 L320 200 L240 320 L200 280 L160 340 Z" fill="#fff"/>
 <circle cx="380" cy="220" r="14" fill="#f59e0b"/>
-<text x="256" y="450" text-anchor="middle" fill="#fff" font-family="Inter,sans-serif" font-size="56" font-weight="900">SW</text>
+<text x="256" y="450" text-anchor="middle" fill="#fff" font-family="Inter,sans-serif" font-size="56" font-weight="900">MSP</text>
 </svg>'''
 
 import base64 as _b64
@@ -75,9 +75,9 @@ _icon_b64 = _b64.b64encode(_SW_ICON_SVG.encode()).decode()
 _icon_data_uri = f"data:image/svg+xml;base64,{_icon_b64}"
 
 PWA_MANIFEST_JSON = (
-    '{"name":"StockWins — Premium Stock Intelligence",'
-    '"short_name":"StockWins",'
-    '"description":"Proprietary stock signals, composite categories, and signal track record.",'
+    '{"name":"MarketSignalPro — AI-Powered Stock Signals",'
+    '"short_name":"MarketSignalPro",'
+    '"description":"AI-powered stock signals, smart watchlists, alerts, and plain-English market insights.",'
     '"start_url":"/",'
     '"display":"standalone",'
     '"orientation":"portrait",'
@@ -98,7 +98,7 @@ st.markdown(f"""
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="StockWins">
+<meta name="apple-mobile-web-app-title" content="MarketSignalPro">
 <meta name="msapplication-TileColor" content="#2563eb">
 <meta name="msapplication-navbutton-color" content="#2563eb">
 <meta name="format-detection" content="telephone=no">
@@ -320,8 +320,8 @@ button:active, [role="button"]:active, .stButton button:active {{
 
 <!-- Splash screen (visible only when launched as installed app) -->
 <div id="sw-pwa-splash">
-    <div id="sw-pwa-splash-logo">SW</div>
-    <div id="sw-pwa-splash-title">StockWins</div>
+    <div id="sw-pwa-splash-logo">MSP</div>
+    <div id="sw-pwa-splash-title">MarketSignalPro</div>
     <div id="sw-pwa-splash-tagline">Loading market intelligence…</div>
 </div>
 
@@ -332,7 +332,7 @@ button:active, [role="button"]:active, .stButton button:active {{
 <div id="sw-install-banner">
     <div id="sw-install-banner-icon">📲</div>
     <div id="sw-install-banner-text">
-        <strong>Install StockWins</strong>
+        <strong>Install MarketSignalPro</strong>
         <span>Add to your home screen for instant access</span>
     </div>
     <button id="sw-install-banner-btn">Install</button>
@@ -390,7 +390,7 @@ button:active, [role="button"]:active, .stButton button:active {{
         deferredPrompt.prompt();
         const {{ outcome }} = await deferredPrompt.userChoice;
         if (outcome === 'accepted') {{
-            console.log('StockWins installed!');
+            console.log('MarketSignalPro installed!');
         }} else {{
             localStorage.setItem('sw_install_dismissed', Date.now().toString());
         }}
@@ -415,7 +415,7 @@ button:active, [role="button"]:active, .stButton button:active {{
         setTimeout(() => {{
             const banner = document.getElementById('sw-install-banner');
             const text = document.getElementById('sw-install-banner-text');
-            text.innerHTML = '<strong>Install StockWins</strong><span>Tap Share → Add to Home Screen</span>';
+            text.innerHTML = '<strong>Install MarketSignalPro</strong><span>Tap Share → Add to Home Screen</span>';
             installBtn.textContent = 'Got it';
             installBtn.addEventListener('click', () => {{
                 banner.classList.remove('visible');
@@ -429,7 +429,7 @@ button:active, [role="button"]:active, .stButton button:active {{
     // Uses a tiny inline SW served as data: URI (since Streamlit has no static root)
     if ('serviceWorker' in navigator) {{
         const swCode = `
-            const CACHE_NAME = 'stockwins-v1';
+            const CACHE_NAME = 'marketsignalpro-v1';
             self.addEventListener('install', e => self.skipWaiting());
             self.addEventListener('activate', e => e.waitUntil(clients.claim()));
             self.addEventListener('fetch', e => {{
@@ -553,17 +553,17 @@ def _load_seed_accounts():
         if oe and oh:
             r = {
                 oe: {"pw":oh,"name":"Owner","role":"owner","verified":True,"joined":today,"plan":"Annual"},
-                "demo@stockwins.com":    {"pw":_hp("demo123"), "name":"Demo User",  "role":"free",   "verified":True,"joined":today,"plan":"Free"},
-                "premium@stockwins.com": {"pw":_hp("premium1"),"name":"Alex Rivera","role":"premium","verified":True,"joined":today,"plan":"Monthly"},
+                "demo@marketsignalpro.com":    {"pw":_hp("demo123"), "name":"Demo User",  "role":"free",   "verified":True,"joined":today,"plan":"Free"},
+                "premium@marketsignalpro.com": {"pw":_hp("premium1"),"name":"Alex Rivera","role":"premium","verified":True,"joined":today,"plan":"Monthly"},
             }
             if ae and ah: r[ae]={"pw":ah,"name":"Admin","role":"admin","verified":True,"joined":today,"plan":"Annual"}
             return r
     except: pass
     return {
-        "demo@stockwins.com":    {"pw":_hp("demo123"), "name":"Demo User",  "role":"free",   "verified":True,"joined":datetime.now().strftime("%Y-%m-%d"),"plan":"Free"},
-        "premium@stockwins.com": {"pw":_hp("premium1"),"name":"Alex Rivera","role":"premium","verified":True,"joined":datetime.now().strftime("%Y-%m-%d"),"plan":"Monthly"},
-        "admin@stockwins.com":   {"pw":_hp("admin_change_me"),"name":"Admin","role":"admin","verified":True,"joined":datetime.now().strftime("%Y-%m-%d"),"plan":"Annual"},
-        "owner@stockwins.com":   {"pw":_hp("owner_change_me"),"name":"Owner","role":"owner","verified":True,"joined":datetime.now().strftime("%Y-%m-%d"),"plan":"Annual"},
+        "demo@marketsignalpro.com":    {"pw":_hp("demo123"), "name":"Demo User",  "role":"free",   "verified":True,"joined":datetime.now().strftime("%Y-%m-%d"),"plan":"Free"},
+        "premium@marketsignalpro.com": {"pw":_hp("premium1"),"name":"Alex Rivera","role":"premium","verified":True,"joined":datetime.now().strftime("%Y-%m-%d"),"plan":"Monthly"},
+        "admin@marketsignalpro.com":   {"pw":_hp("admin_change_me"),"name":"Admin","role":"admin","verified":True,"joined":datetime.now().strftime("%Y-%m-%d"),"plan":"Annual"},
+        "owner@marketsignalpro.com":   {"pw":_hp("owner_change_me"),"name":"Owner","role":"owner","verified":True,"joined":datetime.now().strftime("%Y-%m-%d"),"plan":"Annual"},
     }
 
 def get_td_key():
@@ -585,8 +585,8 @@ def stripe_configured():
     return bool(_stripe_key())
 
 def _get_app_url():
-    try: return st.secrets.get("APP_URL","https://stockwins.streamlit.app")
-    except: return "https://stockwins.streamlit.app"
+    try: return st.secrets.get("APP_URL","https://marketsignalpro.streamlit.app")
+    except: return "https://marketsignalpro.streamlit.app"
 
 def create_checkout_session(plan, user_email):
     """Create Stripe Checkout Session. Returns (url, error)."""
@@ -1415,7 +1415,7 @@ def init():
         "users_db":_get_global_db(),
         "site_stats":{"total_signups":1847,"premium_users":312,"daily_active":634,"conversion":16.9},
         "email_digest_enabled":False,"digest_frequency":"Daily",
-        "ranking_sort":"SW Score","ranking_filter":"All",
+        "ranking_sort":"Signal Score","ranking_filter":"All",
     })
 init()
 
@@ -1494,7 +1494,7 @@ def back_button(key="page_back"):
 # ─────────────────────────────────────────────────────────────
 # EXCEL EXPORT
 # ─────────────────────────────────────────────────────────────
-def make_excel(rows: list, sheet_name: str = "StockWins Data") -> bytes:
+def make_excel(rows: list, sheet_name: str = "MarketSignalPro Data") -> bytes:
     """Build an Excel workbook from a list of dicts. Returns bytes."""
     import io
     try:
@@ -1860,7 +1860,7 @@ def get_composite_stocks(cat_name,limit=10):
             sc,bd,op,risk,conf=compute_scores(df,info,sent); ig=get_insights(df,info)
             if not q: continue
             sf=(info.get("sf",0) or 0)*100; bull=sent.get("bull",50); in_hot=t in hot
-            include=False; comp=sc; why="StockWins composite signal"
+            include=False; comp=sc; why="MarketSignalPro composite signal"
             if cat_name=="🔥💥 Squeeze + Buzz":
                 comp=sf*1.5+(30 if in_hot else 0)+(bull-50)*0.4+bd.get("Volume",0)
                 include=sf>=8 and (in_hot or bull>=60)
@@ -1943,7 +1943,7 @@ def get_composite_stocks(cat_name,limit=10):
                 include=tr_s>=16 and vs>=7 and mac>=9
                 why="Multi-session above-avg volume + holding MAs = institutional interest"
             else:
-                include=True; comp=sc; why="StockWins scoring engine"
+                include=True; comp=sc; why="MarketSignalPro scoring engine"
             if include:
                 results.append({"t":t,"q":q,"sc":sc,"bd":bd,"ig":ig,"op":op,"risk":risk,"conf":conf,
                                  "hot":in_hot,"df":df,"info":info,"sent":sent,"comp":comp,"why":why})
@@ -2141,7 +2141,7 @@ NAV_CSS = """<style>
 
 LOGO_HTML = """<div class="sw-logo-click-target">
 <span style="font-family:'JetBrains Mono',monospace;font-size:24px;font-weight:700;letter-spacing:-0.5px;">
-<span style="color:#e2e8f0;">Stock</span><span style="color:#f59e0b;">W</span><span style="color:#e2e8f0;">ins</span>
+<span style="color:#e2e8f0;">Market</span><span style="color:#f59e0b;">Signal</span><span style="color:#e2e8f0;">Pro</span>
 </span></div>"""
 
 def render_logo_click(key,dest):
@@ -2274,7 +2274,7 @@ def render_topbar(active=""):
             <div class="sw-topbar-logo">
                 <span style="font-family:'JetBrains Mono',monospace;font-size:22px;font-weight:700;letter-spacing:-0.5px;">
                     <a href="?topbar_nav=dashboard" style="text-decoration:none;">
-                        <span style="color:#e2e8f0;">Stock</span><span style="color:#f59e0b;">W</span><span style="color:#e2e8f0;">ins</span>
+                        <span style="color:#e2e8f0;">Market</span><span style="color:#f59e0b;">Signal</span><span style="color:#e2e8f0;">Pro</span>
                     </a>
                 </span>
             </div>
@@ -2292,7 +2292,7 @@ def render_topbar(active=""):
         <div class="sw-mobile-topbar-bar">
             <a href="?topbar_nav=dashboard" class="sw-mobile-logo">
                 <span style="font-family:'JetBrains Mono',monospace;font-size:20px;font-weight:700;letter-spacing:-0.5px;">
-                    <span style="color:#e2e8f0;">Stock</span><span style="color:#f59e0b;">W</span><span style="color:#e2e8f0;">ins</span>
+                    <span style="color:#e2e8f0;">Market</span><span style="color:#f59e0b;">Signal</span><span style="color:#e2e8f0;">Pro</span>
                 </span>
             </a>
             <a href="?topbar_nav=settings" class="sw-mobile-icon">⚙️</a>
@@ -2305,7 +2305,7 @@ def render_topbar(active=""):
             <div class="sw-topbar-logo">
                 <span style="font-family:'JetBrains Mono',monospace;font-size:22px;font-weight:700;letter-spacing:-0.5px;">
                     <a href="?topbar_nav=landing" style="text-decoration:none;">
-                        <span style="color:#e2e8f0;">Stock</span><span style="color:#f59e0b;">W</span><span style="color:#e2e8f0;">ins</span>
+                        <span style="color:#e2e8f0;">Market</span><span style="color:#f59e0b;">Signal</span><span style="color:#e2e8f0;">Pro</span>
                     </a>
                 </span>
             </div>
@@ -2324,7 +2324,7 @@ def render_topbar(active=""):
         <div class="sw-mobile-topbar-bar">
             <a href="?topbar_nav=landing" class="sw-mobile-logo">
                 <span style="font-family:'JetBrains Mono',monospace;font-size:20px;font-weight:700;letter-spacing:-0.5px;">
-                    <span style="color:#e2e8f0;">Stock</span><span style="color:#f59e0b;">W</span><span style="color:#e2e8f0;">ins</span>
+                    <span style="color:#e2e8f0;">Market</span><span style="color:#f59e0b;">Signal</span><span style="color:#e2e8f0;">Pro</span>
                 </span>
             </a>
         </div>
@@ -2374,7 +2374,7 @@ def render_sidebar():
             </div>''',unsafe_allow_html=True)
             if st.button("Log Out",key="sb_logout",use_container_width=True): logout()
         else:
-            st.markdown('<div style="padding:12px 18px;font-size:12px;color:#374f6e;margin-bottom:8px;">Sign in to access StockWins.</div>',unsafe_allow_html=True)
+            st.markdown('<div style="padding:12px 18px;font-size:12px;color:#374f6e;margin-bottom:8px;">Sign in to access MarketSignalPro.</div>',unsafe_allow_html=True)
             if st.button("🚀 Sign Up Free",key="sb_signup",use_container_width=True,type="primary"): nav("signup")
             if st.button("Login →",key="sb_login",use_container_width=True): nav("login")
 
@@ -2382,7 +2382,7 @@ def render_sidebar():
                 <div style="font-size:10px;font-weight:700;color:rgba(255,255,255,.2);letter-spacing:1px;text-transform:uppercase;margin-bottom:7px;">Free Includes</div>
                 <div style="font-size:12px;color:#2a3a52;line-height:2.2;">✅ Live market data<br>✅ 7 composite categories<br>✅ Social sentiment<br>✅ Plain-English insights<br>✅ Watchlist</div>
             </div>""",unsafe_allow_html=True)
-        st.markdown('<div style="padding:8px 18px;font-size:10px;color:rgba(255,255,255,.1);">© 2026 StockWins</div>',unsafe_allow_html=True)
+        st.markdown('<div style="padding:8px 18px;font-size:10px;color:rgba(255,255,255,.1);">© 2026 MarketSignalPro</div>',unsafe_allow_html=True)
 
 # ─────────────────────────────────────────────────────────────
 # FOOTER
@@ -2394,7 +2394,7 @@ def render_footer():
             <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:24px;margin-bottom:24px;">
                 <div>
                     <span style="font-family:'JetBrains Mono',monospace;font-size:20px;font-weight:700;letter-spacing:-.5px;">
-                        <span style="color:#e2e8f0;">Stock</span><span style="color:{GOLD};">W</span><span style="color:#e2e8f0;">ins</span>
+                        <span style="color:#e2e8f0;">Market</span><span style="color:{GOLD};">Signal</span><span style="color:#e2e8f0;">Pro</span>
                     </span>
                     <div style="font-size:12px;color:rgba(255,255,255,.2);margin-top:6px;">Market Intelligence Platform</div>
                 </div>
@@ -2405,8 +2405,8 @@ def render_footer():
                     <span style="cursor:pointer;">Contact</span>
                 </div>
             </div>
-            <div class="disc">⚠️ <strong style="color:#4a5e7a;">Risk Disclaimer:</strong> Trading stocks involves substantial risk of financial loss. StockWins provides algorithmic, educational content only — not financial, investment, legal, or tax advice. All signals may be inaccurate or delayed. Past performance does not guarantee future results. Always consult a licensed financial professional before making investment decisions.</div>
-            <div style="font-size:10px;color:rgba(255,255,255,.1);margin-top:10px;text-align:right;">© 2026 StockWins. All rights reserved.</div>
+            <div class="disc">⚠️ <strong style="color:#4a5e7a;">Risk Disclaimer:</strong> Trading stocks involves substantial risk of financial loss. MarketSignalPro provides algorithmic, educational content only — not financial, investment, legal, or tax advice. All signals may be inaccurate or delayed. Past performance does not guarantee future results. Always consult a licensed financial professional before making investment decisions.</div>
+            <div style="font-size:10px;color:rgba(255,255,255,.1);margin-top:10px;text-align:right;">© 2026 MarketSignalPro. All rights reserved.</div>
         </div>
     </div>
     """, unsafe_allow_html=True)
@@ -2572,7 +2572,7 @@ def page_landing():
         <div class="sw-topbar-logo">
             <span style="font-family:'JetBrains Mono',monospace;font-size:22px;font-weight:700;letter-spacing:-0.5px;">
                 <a href="?topbar_nav=landing" style="text-decoration:none;">
-                    <span style="color:#e2e8f0;">Stock</span><span style="color:#f59e0b;">W</span><span style="color:#e2e8f0;">ins</span>
+                    <span style="color:#e2e8f0;">Market</span><span style="color:#f59e0b;">Signal</span><span style="color:#e2e8f0;">Pro</span>
                 </a>
             </span>
         </div>
@@ -2586,7 +2586,7 @@ def page_landing():
     <div class="sw-mobile-topbar-bar">
         <a href="?topbar_nav=landing" class="sw-mobile-logo">
             <span style="font-family:'JetBrains Mono',monospace;font-size:20px;font-weight:700;letter-spacing:-0.5px;">
-                <span style="color:#e2e8f0;">Stock</span><span style="color:#f59e0b;">W</span><span style="color:#e2e8f0;">ins</span>
+                <span style="color:#e2e8f0;">Market</span><span style="color:#f59e0b;">Signal</span><span style="color:#e2e8f0;">Pro</span>
             </span>
         </a>
     </div>
@@ -2872,7 +2872,7 @@ def page_landing():
     }
     </style>
     <div style="padding:32px 48px 8px;text-align:center;">
-        <div style="font-size:13px;color:#374f6e;margin-bottom:16px;">Join 1,847+ traders already using StockWins · Cancel anytime · No credit card required</div>
+        <div style="font-size:13px;color:#374f6e;margin-bottom:16px;">Join 1,847+ traders already using MarketSignalPro · Cancel anytime · No credit card required</div>
     </div>
     """, unsafe_allow_html=True)
     _,cta,_=st.columns([1,4,1])
@@ -2886,7 +2886,7 @@ def page_landing():
     <div style="padding:0 48px;">
         <div style="display:flex;align-items:center;gap:12px;margin-bottom:8px;">
             <div style="font-size:18px;font-weight:800;color:#e2e8f0;">🎯 Our Proprietary Signal Categories</div>
-            <span style="background:rgba(168,85,247,0.15);color:#c084fc;border:1px solid rgba(168,85,247,0.35);font-size:10px;font-weight:700;padding:3px 10px;border-radius:20px;white-space:nowrap;">✨ Unique to StockWins</span>
+            <span style="background:rgba(168,85,247,0.15);color:#c084fc;border:1px solid rgba(168,85,247,0.35);font-size:10px;font-weight:700;padding:3px 10px;border-radius:20px;white-space:nowrap;">✨ Unique to MarketSignalPro</span>
         </div>
         <div style="font-size:13px;color:#374f6e;margin-bottom:18px;">We combine multiple independent data signals into composite categories you won't find anywhere else. Each one has a specific multi-factor entry criterion.</div>
     </div>
@@ -3002,9 +3002,9 @@ def page_landing():
     # ── FAQ ──
     st.markdown('<div style="padding:0 48px;"><div class="sec-hd">FAQ</div>',unsafe_allow_html=True)
     for q,a in [
-        ("Is this financial advice?","No. StockWins is an educational analysis tool providing algorithmic signals. Nothing on this platform constitutes financial, investment, legal, or tax advice. Always consult a licensed financial advisor before making investment decisions."),
-        ("What are the Composite Categories?","StockWins proprietary composite categories combine multiple independent data signals to surface unique setups. For example, '🔥💥 Squeeze + Buzz' finds stocks with both high short float AND social momentum trending simultaneously — a specific multi-factor signal you won't find on other platforms."),
-        ("What markets does StockWins cover?","US equity markets including NASDAQ, NYSE, S&P 500, Russell, and high-volume small caps. Data includes real-time price, volume, fundamentals, and live social sentiment from StockTwits."),
+        ("Is this financial advice?","No. MarketSignalPro is an educational analysis tool providing algorithmic signals. Nothing on this platform constitutes financial, investment, legal, or tax advice. Always consult a licensed financial advisor before making investment decisions."),
+        ("What are the Composite Categories?","MarketSignalPro proprietary composite categories combine multiple independent data signals to surface unique setups. For example, '🔥💥 Squeeze + Buzz' finds stocks with both high short float AND social momentum trending simultaneously — a specific multi-factor signal you won't find on other platforms."),
+        ("What markets does MarketSignalPro cover?","US equity markets including NASDAQ, NYSE, S&P 500, Russell, and high-volume small caps. Data includes real-time price, volume, fundamentals, and live social sentiment from StockTwits."),
         ("What's the difference between Free and Premium?","Free: 7 composite categories, market overview, social sentiment, plain-English insights, watchlist. Premium: All 17 categories including short squeeze scanner, advanced screener, full BI analytics, score breakdowns, BUY/SELL recommendations with reasoning, and unlimited watchlists."),
         ("Can I cancel Premium anytime?","Yes. Month-to-month billing. Cancel anytime and keep access through the end of your billing period."),
     ]:
@@ -3047,26 +3047,26 @@ def page_features():
     st.markdown(f"""
     <div style="text-align:center;padding:40px 0 32px;">
         <div style="font-size:11px;font-weight:700;color:{BLUE};letter-spacing:2px;text-transform:uppercase;margin-bottom:12px;">Full Platform Overview</div>
-        <div style="font-size:38px;font-weight:900;color:#f1f5f9;letter-spacing:-1.5px;margin-bottom:10px;">Everything in StockWins</div>
+        <div style="font-size:38px;font-weight:900;color:#f1f5f9;letter-spacing:-1.5px;margin-bottom:10px;">Everything in MarketSignalPro</div>
         <div style="font-size:15px;color:#374f6e;max-width:560px;margin:0 auto;">Built for traders who want data-driven clarity — not noise. Every feature is designed to answer one question: <em>should I pay attention to this stock right now?</em></div>
     </div>
     """, unsafe_allow_html=True)
 
     features_data = [
-        ("🎯","Proprietary Composite Scoring","17 unique composite categories combining RSI, MACD, volume, short interest, social sentiment, and Bollinger Bands into single actionable signals. Categories like '🔥💥 Squeeze + Buzz', '🌪️ Volatility Squeeze', and '🎯📊 Triple Lock' are only available on StockWins. Each category has a specific multi-factor entry criterion that filters our full universe in real time.","All plans"),
+        ("🎯","Proprietary Composite Scoring","17 unique composite categories combining RSI, MACD, volume, short interest, social sentiment, and Bollinger Bands into single actionable signals. Categories like '🔥💥 Squeeze + Buzz', '🌪️ Volatility Squeeze', and '🎯📊 Triple Lock' are only available on MarketSignalPro. Each category has a specific multi-factor entry criterion that filters our full universe in real time.","All plans"),
         ("🟢","BUY / WATCH / AVOID Signals","Every stock gets a clear recommendation based on our scoring engine — STRONG BUY, BUY, SQUEEZE BUY, WATCH, HOLD/WAIT, or AVOID — with plain-English reasoning explaining exactly why the signal was triggered. No jargon. No unexplained scores.","All plans"),
         ("💡","Plain-English Technical Analysis","RSI, MACD, moving average crossovers, Bollinger Bands, and volume spikes all translated into conversational sentences. We explain what a Golden Cross means in terms a beginner understands while still giving experts the data they need.","All plans"),
         ("📡","Live Social Sentiment","Real-time StockTwits data showing bullish/bearish % for any stock, watchlist counts, and trending detection. Our composite categories use this data to find early momentum before price moves.","All plans"),
         ("📊","Market Overview Dashboard","Live index data (NASDAQ, S&P 500, DOW, VIX, Russell), sector performance heatmap, market pulse indicator, and top trending tickers in a single clean view.","All plans"),
         ("⭐","Smart Watchlist","Track your stocks with automatic daily scoring. Premium users get watchlist analytics showing average score, % in the green, risk distribution, and sentiment breakdown across holdings.","All plans (Premium: analytics)"),
         ("🔔","Price Alerts","Set price-above or price-below alerts for any ticker. Alerts are managed from your account settings and displayed in your dashboard.","All plans"),
-        ("🔍","Advanced Stock Screener","Multi-factor screener with RSI range filters, MACD bullish/bearish filter, above/below MA filter, volume spike detection, minimum StockWins score, short float threshold, and category filters. Save and name your screener configurations.","Premium"),
+        ("🔍","Advanced Stock Screener","Multi-factor screener with RSI range filters, MACD bullish/bearish filter, above/below MA filter, volume spike detection, minimum MarketSignalPro score, short float threshold, and category filters. Save and name your screener configurations.","Premium"),
         ("📈","BI Analytics Dashboard","Interactive Plotly charts: Top Gainers/Losers bar charts, Sector Performance bar chart, Social Sentiment bubble chart, Volume Surge scatter plot, and the Composite Opportunity Matrix — our exclusive heatmap showing signal strength across 10 tickers × 5 signal types.","Premium"),
         ("💥","Short Squeeze Scanner","Dedicated scanner identifying stocks with high short float (>10%), high days-to-cover, and rising momentum. Filters by social trending and volume to find squeeze setups before they run.","Premium"),
         ("📉→📈","Deep Stock Reports","Full stock detail pages with 60-day price chart + MA20/MA50 overlaid, volume bar chart vs average, complete plain-English analysis, social sentiment bar, score breakdown, why-flagged section, and related stocks.","Premium (charts)"),
         ("🎪","Email Digest (Coming Q3 2026)","Daily or weekly digest of your top-scored watchlist stocks, new BUY signals, and trending composite category alerts delivered to your inbox. Configurable from account settings.","Premium"),
         ("🛠️","Admin Panel","Full user management (promote/demote roles, delete accounts), API configuration with Twelve Data integration, site analytics with simulated growth charts, data source health monitoring, and security checklist with Streamlit Secrets setup guide.","Admin/Owner"),
-        ("🔑","Ranking Controls","Sort and filter any category by StockWins Score, % change today, volume ratio, short float, or social sentiment. Drag-and-drop ranking priority controls for power users.","Premium"),
+        ("🔑","Ranking Controls","Sort and filter any category by MarketSignalPro Score, % change today, volume ratio, short float, or social sentiment. Drag-and-drop ranking priority controls for power users.","Premium"),
         ("🔐","Secure Authentication","Passwords stored as SHA-256 hashes. Credentials loaded exclusively from Streamlit Cloud Secrets — never hardcoded. Supports both flat secrets and [accounts] section format.","All plans"),
     ]
 
@@ -3101,7 +3101,7 @@ def page_login():
     render_topbar()
     _,cc,_=st.columns([1,2,1])
     with cc:
-        st.markdown(f'<div style="text-align:center;padding:36px 0 24px;"><div style="font-size:26px;font-weight:800;color:#e2e8f0;margin-bottom:6px;">Welcome Back 👋</div><div style="font-size:13px;color:#374f6e;">Sign in to your StockWins account</div></div>',unsafe_allow_html=True)
+        st.markdown(f'<div style="text-align:center;padding:36px 0 24px;"><div style="font-size:26px;font-weight:800;color:#e2e8f0;margin-bottom:6px;">Welcome Back 👋</div><div style="font-size:13px;color:#374f6e;">Sign in to your MarketSignalPro account</div></div>',unsafe_allow_html=True)
         with st.form("lf",clear_on_submit=False):
             email=st.text_input("Email address",label_visibility="visible")
             pw=st.text_input("Password",type="password",label_visibility="visible")
@@ -3120,7 +3120,7 @@ def page_login():
         except: pass
 
         if not has_secrets:
-            st.markdown(f'<div style="background:#080b14;border:1px solid {BORDER};border-radius:8px;padding:12px 14px;margin-top:12px;font-size:12px;color:#374f6e;"><span style="color:#93b4fd;font-weight:600;">Demo accounts:</span><br><span style="font-family:\'JetBrains Mono\',monospace;">demo@stockwins.com</span> / <span style="font-family:\'JetBrains Mono\',monospace;">demo123</span><br><span style="font-family:\'JetBrains Mono\',monospace;">premium@stockwins.com</span> / <span style="font-family:\'JetBrains Mono\',monospace;">premium1</span></div>',unsafe_allow_html=True)
+            st.markdown(f'<div style="background:#080b14;border:1px solid {BORDER};border-radius:8px;padding:12px 14px;margin-top:12px;font-size:12px;color:#374f6e;"><span style="color:#93b4fd;font-weight:600;">Demo accounts:</span><br><span style="font-family:\'JetBrains Mono\',monospace;">demo@marketsignalpro.com</span> / <span style="font-family:\'JetBrains Mono\',monospace;">demo123</span><br><span style="font-family:\'JetBrains Mono\',monospace;">premium@marketsignalpro.com</span> / <span style="font-family:\'JetBrains Mono\',monospace;">premium1</span></div>',unsafe_allow_html=True)
         else:
             st.markdown(f'<div style="background:#080b14;border:1px solid {BORDER};border-radius:8px;padding:12px 14px;margin-top:12px;font-size:12px;color:#374f6e;text-align:center;">Use the email and password you set in Streamlit Secrets.</div>',unsafe_allow_html=True)
 
@@ -3142,7 +3142,7 @@ def page_signup():
             email=st.text_input("Email",placeholder="you@example.com")
             pw=st.text_input("Password",type="password",placeholder="Min 6 characters")
             pw2=st.text_input("Confirm password",type="password")
-            agree=st.checkbox("I agree to the Terms of Service. I understand StockWins is for educational purposes only and is not financial advice.")
+            agree=st.checkbox("I agree to the Terms of Service. I understand MarketSignalPro is for educational purposes only and is not financial advice.")
             if st.form_submit_button("Create Free Account →",type="primary",use_container_width=True):
                 if not all([name,email,pw,pw2]): st.error("Please fill in all fields.")
                 elif pw!=pw2: st.error("Passwords don't match.")
@@ -3166,7 +3166,7 @@ def page_signup():
         if st.button("Already have an account? Sign In",key="s2l",use_container_width=True): nav("login")
 
 def _send_telegram(chat_id, message):
-    """Send a Telegram message via the StockWins bot. Returns (True, None) or (False, error)."""
+    """Send a Telegram message via the MarketSignalPro bot. Returns (True, None) or (False, error)."""
     try:
         bot_token = st.secrets.get("TELEGRAM_BOT_TOKEN", "")
         if not bot_token or not chat_id:
@@ -3231,8 +3231,8 @@ def _send_password_reset(email, reset_token):
             </div>"""
             resp = _r.post("https://api.resend.com/emails",
                 headers={"Authorization":f"Bearer {resend_key}","Content-Type":"application/json"},
-                json={"from":"StockWins <noreply@stockwins.com>","to":[email],
-                      "subject":"Reset your StockWins password","html":html},
+                json={"from":"MarketSignalPro <noreply@marketsignalpro.com>","to":[email],
+                      "subject":"Reset your MarketSignalPro password","html":html},
                 timeout=10)
             if resp.status_code in (200,201): return True, None
     except Exception: pass
@@ -3246,8 +3246,8 @@ def _send_verification_email(email, code):
             import requests as _r
             resp = _r.post("https://api.resend.com/emails",
                 headers={"Authorization":f"Bearer {resend_key}","Content-Type":"application/json"},
-                json={"from":"StockWins <noreply@stockwins.com>","to":[email],
-                      "subject":"Your StockWins verification code",
+                json={"from":"MarketSignalPro <noreply@marketsignalpro.com>","to":[email],
+                      "subject":"Your MarketSignalPro verification code",
                       "html":f"""<div style="font-family:Inter,sans-serif;background:#07090f;padding:40px;color:#e2e8f0;">
                         <h2>Stock<span style="color:#f59e0b;">W</span>ins</h2>
                         <h3>Verify your email</h3>
@@ -3393,7 +3393,7 @@ def page_dashboard():
                                 <span style="font-size:13px;font-weight:600;color:#e2e8f0;">{feat_cat}</span>
                             </div>
                             <div style="font-size:11px;color:#6b7fa0;line-height:1.7;">
-                                StockWins flagged <strong style="color:#e2e8f0;">{feat_ticker}</strong> {time_str}
+                                MarketSignalPro flagged <strong style="color:#e2e8f0;">{feat_ticker}</strong> {time_str}
                                 via <strong style="color:#c084fc;">{feat_cat}</strong> at <strong style="color:#e2e8f0;">${feat_entry:.2f}</strong>
                                 · Score <strong style="color:#e2e8f0;">{feat_score}/100</strong>
                                 · Confidence <strong style="color:#e2e8f0;">{conf}</strong>
@@ -3710,7 +3710,7 @@ def page_discover():
     """, unsafe_allow_html=True)
 
     # ── Category selector grid (horizontal, all visible) ──
-    st.markdown('<div class="disc-section-label">⭐ Composite Categories — StockWins Exclusive</div>', unsafe_allow_html=True)
+    st.markdown('<div class="disc-section-label">⭐ Composite Categories — MarketSignalPro Exclusive</div>', unsafe_allow_html=True)
 
     # Render composite cats in a grid (4 per row)
     comp_items = list(COMPOSITE_CATS.items())
@@ -3864,7 +3864,7 @@ def page_detail():
         sc_bg="#04200d" if sc>=65 else "#1a1000" if sc>=40 else "#200404"
         st.markdown(f"""<div style="background:{sc_bg};border:1px solid {sc_c};border-radius:10px;padding:16px;text-align:center;">
             <div style="font-family:'JetBrains Mono',monospace;font-size:42px;font-weight:800;color:{sc_c};">{sc}</div>
-            <div style="font-size:10px;color:{sc_c};text-transform:uppercase;letter-spacing:1px;margin-top:2px;">StockWins Score</div>
+            <div style="font-size:10px;color:{sc_c};text-transform:uppercase;letter-spacing:1px;margin-top:2px;">MarketSignalPro Score</div>
             <div style="font-size:11px;color:#2a3a52;margin-top:4px;">{op}</div>
         </div>""",unsafe_allow_html=True)
 
@@ -3969,12 +3969,12 @@ def page_detail():
 
     st.markdown(f"""
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
-        <div style="font-size:16px;font-weight:800;color:#e2e8f0;">📈 StockWins Signal Track Record</div>
+        <div style="font-size:16px;font-weight:800;color:#e2e8f0;">📈 MarketSignalPro Signal Track Record</div>
         <span style="background:rgba(168,85,247,0.15);color:#c084fc;border:1px solid rgba(168,85,247,0.35);
               font-size:10px;font-weight:700;padding:4px 12px;border-radius:20px;">Proprietary Data</span>
     </div>
     <div style="font-size:12px;color:#374f6e;margin-bottom:14px;">
-        Every time StockWins flagged <strong style="color:#60a5fa;">{ticker}</strong> via a composite signal,
+        Every time MarketSignalPro flagged <strong style="color:#60a5fa;">{ticker}</strong> via a composite signal,
         we tracked what actually happened. Use this to evaluate signal quality.
     </div>
     """, unsafe_allow_html=True)
@@ -4042,7 +4042,7 @@ def page_detail():
     st.markdown(f"""
     <div style="font-size:16px;font-weight:800;color:#e2e8f0;margin-bottom:6px;">💰 What Would You Have Made?</div>
     <div style="font-size:12px;color:#374f6e;margin-bottom:14px;">
-        Enter a hypothetical investment to see estimated P&L since today's StockWins signal.
+        Enter a hypothetical investment to see estimated P&L since today's MarketSignalPro signal.
         Includes stock buy/short and options estimate.
         <span style="color:#fbbf24;"> ⚠️ Educational estimate — not financial advice.</span>
     </div>
@@ -4073,7 +4073,7 @@ def page_detail():
             entry_price = most_recent.get("trigger_price", price)
             days_held = (datetime.now() - datetime.fromisoformat(most_recent.get("triggered_at", datetime.now().isoformat()))).days
             signal_date = datetime.fromisoformat(most_recent.get("triggered_at", datetime.now().isoformat())).strftime("%b %d, %Y")
-            st.caption(f"📅 Using StockWins signal entry from {signal_date} · Entry: ${entry_price:.2f}")
+            st.caption(f"📅 Using MarketSignalPro signal entry from {signal_date} · Entry: ${entry_price:.2f}")
         else:
             entry_price = price
             days_held = 0
@@ -4295,12 +4295,12 @@ def page_signal_track():
     <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:8px;flex-wrap:wrap;gap:10px;">
         <div>
             <div style="font-size:24px;font-weight:800;color:#e2e8f0;margin-bottom:6px;">📉 Signal Track Record</div>
-            <div style="font-size:13px;color:#374f6e;">Every time StockWins flags a stock, we track what happened next.
+            <div style="font-size:13px;color:#374f6e;">Every time MarketSignalPro flags a stock, we track what happened next.
             This is our public performance log — wins, losses, and everything in between.</div>
         </div>
         <span style="background:rgba(168,85,247,0.15);color:#c084fc;border:1px solid rgba(168,85,247,0.35);
               font-size:11px;font-weight:700;padding:6px 14px;border-radius:20px;margin-top:4px;">
-            ✨ Proprietary StockWins Data
+            ✨ Proprietary MarketSignalPro Data
         </span>
     </div>
     """, unsafe_allow_html=True)
@@ -4343,7 +4343,7 @@ def page_signal_track():
     # ── TAB 1: Recent Signals ──
     with tr_tabs[0]:
         if not all_events:
-            st.info("No signal history yet. Signal events are recorded as StockWins detects composite setups.")
+            st.info("No signal history yet. Signal events are recorded as MarketSignalPro detects composite setups.")
         else:
             # Filter controls
             fc1, fc2, fc3 = st.columns(3)
@@ -4585,7 +4585,7 @@ def page_signal_track():
                 st.markdown(f"""<div style="background:#0d1525;border:1px solid {BORDER};border-radius:10px;padding:20px;text-align:center;">
                     <div style="font-size:24px;margin-bottom:8px;">🔍</div>
                     <div style="font-size:14px;font-weight:700;color:#e2e8f0;margin-bottom:4px;">No signals found for {lookup_ticker}</div>
-                    <div style="font-size:12px;color:#374f6e;">StockWins hasn't flagged this ticker via a composite signal yet.</div>
+                    <div style="font-size:12px;color:#374f6e;">MarketSignalPro hasn't flagged this ticker via a composite signal yet.</div>
                 </div>""", unsafe_allow_html=True)
 
     st.markdown('</div>', unsafe_allow_html=True)
@@ -4669,7 +4669,7 @@ def page_bi():
     # Export leaderboard data
     if movers:
         bi_export_rows=[{"Ticker":m["t"],"Price":f"${m['price']:,.2f}","Change %":f"{m['pct']:+.2f}%","Volume":f"{m['vol']:,}","Vol Ratio":f"{m['vr']:.1f}×"} for m in sorted(movers,key=lambda x:x["pct"],reverse=True)]
-        export_button(bi_export_rows,"stockwins_bi_leaderboard.xlsx","📥 Export Leaderboard","bi_export")
+        export_button(bi_export_rows,"marketsignalpro_bi_leaderboard.xlsx","📥 Export Leaderboard","bi_export")
 
     with tabs[1]:
         sec_sorted=sorted(secs.items(),key=lambda x:x[1],reverse=True)
@@ -4719,7 +4719,7 @@ def page_bi():
     with tabs[4]:
         st.markdown(f"""<div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
             <div style="font-size:16px;font-weight:700;color:#e2e8f0;">🎯 Composite Opportunity Matrix</div>
-            <span style="background:rgba(168,85,247,0.15);color:#c084fc;border:1px solid rgba(168,85,247,0.35);font-size:10px;font-weight:700;padding:3px 10px;border-radius:20px;">StockWins Exclusive</span>
+            <span style="background:rgba(168,85,247,0.15);color:#c084fc;border:1px solid rgba(168,85,247,0.35);font-size:10px;font-weight:700;padding:3px 10px;border-radius:20px;">MarketSignalPro Exclusive</span>
         </div>
         <div style="font-size:12px;color:#374f6e;margin-bottom:14px;">Signal strength across 10 tickers × 5 signal types. Darker green = stronger signal.</div>""",unsafe_allow_html=True)
         matrix_tickers=["NVDA","TSLA","AMD","AAPL","MSTR","GME","PLTR","META","MSFT","ARM"]
@@ -4792,7 +4792,7 @@ def page_bi():
     # ── Module 7: Risk vs Reward Quadrant ──
     with tabs[6]:
         st.markdown(f'<div style="font-size:14px;font-weight:700;color:#e2e8f0;margin-bottom:6px;">🌪️ Risk vs Reward Quadrant</div>',unsafe_allow_html=True)
-        st.markdown(f'<div style="font-size:12px;color:#374f6e;margin-bottom:12px;">Stocks plotted by StockWins score (reward) vs volatility (risk). Top-right = best opportunities.</div>',unsafe_allow_html=True)
+        st.markdown(f'<div style="font-size:12px;color:#374f6e;margin-bottom:12px;">Stocks plotted by MarketSignalPro score (reward) vs volatility (risk). Top-right = best opportunities.</div>',unsafe_allow_html=True)
         if not is_premium():
             st.markdown(f'<div class="card card-gold"><div style="font-size:13px;font-weight:700;color:{GOLD};margin-bottom:6px;">👑 Premium Analytics</div></div>',unsafe_allow_html=True)
             if gold_btn("Upgrade for Risk Analysis","bi_rr_up"): nav("pricing")
@@ -4824,13 +4824,13 @@ def page_bi():
                 fig.add_annotation(x=df_rr["vol"].min()*1.1,y=15,text="😴 LOW/LOW",showarrow=False,font=dict(color="#6b7fa0",size=10))
                 fig.update_layout(paper_bgcolor="rgba(0,0,0,0)",plot_bgcolor="rgba(0,0,0,0)",margin=dict(l=0,r=20,t=10,b=20),height=440,
                     xaxis=dict(showgrid=True,gridcolor="rgba(255,255,255,0.04)",color="#94a3b8",title="Volatility (Risk) %"),
-                    yaxis=dict(showgrid=True,gridcolor="rgba(255,255,255,0.04)",color="#94a3b8",title="StockWins Score (Reward)",range=[0,105]))
+                    yaxis=dict(showgrid=True,gridcolor="rgba(255,255,255,0.04)",color="#94a3b8",title="MarketSignalPro Score (Reward)",range=[0,105]))
                 st.plotly_chart(fig,use_container_width=True)
 
     # ── Module 8: Score Distribution ──
     with tabs[7]:
         st.markdown(f'<div style="font-size:14px;font-weight:700;color:#e2e8f0;margin-bottom:6px;">📊 Score Distribution</div>',unsafe_allow_html=True)
-        st.markdown(f'<div style="font-size:12px;color:#374f6e;margin-bottom:12px;">How tickers in the StockWins universe distribute by composite score.</div>',unsafe_allow_html=True)
+        st.markdown(f'<div style="font-size:12px;color:#374f6e;margin-bottom:12px;">How tickers in the MarketSignalPro universe distribute by composite score.</div>',unsafe_allow_html=True)
         if not is_premium():
             st.markdown(f'<div class="card card-gold"><div style="font-size:13px;font-weight:700;color:{GOLD};margin-bottom:6px;">👑 Premium Analytics</div></div>',unsafe_allow_html=True)
             if gold_btn("Upgrade for Distribution Analysis","bi_sd_up"): nav("pricing")
@@ -5022,7 +5022,7 @@ def page_watchlist():
     # Export button
     ex1,ex2=st.columns([1,3])
     with ex1:
-        export_button(display_rows, "stockwins_watchlist.xlsx", "📥 Export Watchlist", "wl_export")
+        export_button(display_rows, "marketsignalpro_watchlist.xlsx", "📥 Export Watchlist", "wl_export")
 
     # Sort selector
     with ex2:
@@ -5151,7 +5151,7 @@ def page_watchlist():
                         <table style="width:100%;font-size:12px;color:#e2e8f0;border-collapse:collapse;">
                             <tr style="border-top:1px solid rgba(255,255,255,0.06);"><td style="padding:6px 0;color:#6b7fa0;">Price</td><td style="padding:6px 0;text-align:right;font-family:'JetBrains Mono',monospace;font-weight:700;">{r['Price']}</td></tr>
                             <tr style="border-top:1px solid rgba(255,255,255,0.06);"><td style="padding:6px 0;color:#6b7fa0;">Today</td><td style="padding:6px 0;text-align:right;font-family:'JetBrains Mono',monospace;font-weight:700;color:{cc_color};">{r['Change']}</td></tr>
-                            <tr style="border-top:1px solid rgba(255,255,255,0.06);"><td style="padding:6px 0;color:#6b7fa0;">SW Score</td><td style="padding:6px 0;text-align:right;font-family:'JetBrains Mono',monospace;font-weight:700;color:{'#4ade80' if r['Score']>=65 else '#fbbf24' if r['Score']>=45 else '#f87171'};">{r['Score']}/100</td></tr>
+                            <tr style="border-top:1px solid rgba(255,255,255,0.06);"><td style="padding:6px 0;color:#6b7fa0;">Signal Score</td><td style="padding:6px 0;text-align:right;font-family:'JetBrains Mono',monospace;font-weight:700;color:{'#4ade80' if r['Score']>=65 else '#fbbf24' if r['Score']>=45 else '#f87171'};">{r['Score']}/100</td></tr>
                             <tr style="border-top:1px solid rgba(255,255,255,0.06);"><td style="padding:6px 0;color:#6b7fa0;">Risk</td><td style="padding:6px 0;text-align:right;font-weight:700;">{r['Risk']}</td></tr>
                             <tr style="border-top:1px solid rgba(255,255,255,0.06);"><td style="padding:6px 0;color:#6b7fa0;">Short Float</td><td style="padding:6px 0;text-align:right;font-family:'JetBrains Mono',monospace;">{r['Short Float']}</td></tr>
                             <tr style="border-top:1px solid rgba(255,255,255,0.06);"><td style="padding:6px 0;color:#6b7fa0;">Sector</td><td style="padding:6px 0;text-align:right;font-size:11px;">{r['Sector'][:18]}</td></tr>
@@ -5162,7 +5162,7 @@ def page_watchlist():
                 best_cmp = max(cmp_data, key=lambda x: x["Score"])
                 st.markdown(f"""<div style="background:rgba(34,197,94,0.08);border:1px solid rgba(34,197,94,0.3);
                             border-radius:10px;padding:12px 16px;margin-top:14px;text-align:center;font-size:12px;color:#4ade80;">
-                    🏆 <strong>{best_cmp['Ticker']}</strong> has the highest StockWins score in this comparison
+                    🏆 <strong>{best_cmp['Ticker']}</strong> has the highest MarketSignalPro score in this comparison
                     ({best_cmp['Score']}/100, {best_cmp['Signal']})
                 </div>""", unsafe_allow_html=True)
             else:
@@ -5255,7 +5255,7 @@ def page_screener():
     with st.expander("⚙️ Screener Filters",expanded=True):
         c1,c2,c3,c4 = st.columns(4)
         with c1:
-            min_sc = st.slider("Min SW Score", 0, 100, loaded.get("min_sc",40), help="StockWins composite score. 65+ = strong signal")
+            min_sc = st.slider("Min Signal Score", 0, 100, loaded.get("min_sc",40), help="MarketSignalPro composite score. 65+ = strong signal")
             min_rsi = st.slider("Min RSI", 0, 100, loaded.get("min_rsi",20), help="Below 30 = oversold")
         with c2:
             max_rsi = st.slider("Max RSI", 0, 100, loaded.get("max_rsi",80))
@@ -5348,7 +5348,7 @@ def page_screener():
                 sc_ex1, sc_ex2 = st.columns([1,3])
                 with sc_ex1:
                     scr_rows = sorted_results.to_dict("records")
-                    export_button(scr_rows, "stockwins_screener.xlsx", "📥 Export Results", "scr_export")
+                    export_button(scr_rows, "marketsignalpro_screener.xlsx", "📥 Export Results", "scr_export")
                 st.dataframe(sorted_results, use_container_width=True, hide_index=True)
 
                 # Quick view buttons for top 3
@@ -5649,7 +5649,7 @@ def page_pricing():
         st.markdown(f"""<div style="background:#0e1421;border:1px solid rgba(245,158,11,0.2);border-radius:8px;padding:12px 16px;margin-top:12px;font-size:12px;color:#374f6e;">
         ⚙️ <strong style="color:{GOLD};">Payment processing not yet configured.</strong>
         Add <code>STRIPE_SECRET_KEY</code>, <code>STRIPE_PRICE_MONTHLY</code>, <code>STRIPE_PRICE_ANNUAL</code>, <code>APP_URL</code> to Streamlit Secrets, then reboot.
-        In the meantime email <a href="mailto:support@stockwins.com" style="color:#93b4fd;">support@stockwins.com</a> to upgrade manually.
+        In the meantime email <a href="mailto:support@marketsignalpro.com" style="color:#93b4fd;">support@marketsignalpro.com</a> to upgrade manually.
         </div>""", unsafe_allow_html=True)
 
     st.markdown('<div class="disc" style="margin-top:14px;">⚠️ Educational platform only. Not financial advice. Trading involves risk.</div>', unsafe_allow_html=True)
@@ -5784,7 +5784,7 @@ def page_settings():
                             const subId = OneSignal.User.PushSubscription.id;
                             // Tag the user with their email for targeting
                             await OneSignal.login("{email}");
-                            status.innerHTML = "✅ Push enabled! Registering with StockWins...";
+                            status.innerHTML = "✅ Push enabled! Registering with MarketSignalPro...";
                             // Redirect with push_sub_id so the Python backend can save it
                             setTimeout(() => {{
                                 window.location.href = window.location.pathname + "?push_sub_id=" + encodeURIComponent(subId);
@@ -5822,7 +5822,7 @@ def page_settings():
 
         if not current_tg_id:
             st.markdown(f'''<div style="background:#080b14;border:1px solid {BORDER};border-radius:10px;padding:12px 18px;margin-bottom:12px;font-size:12px;color:#374f6e;line-height:2;">
-                <strong style="color:#93b4fd;">1.</strong> Open <a href="https://t.me/StockWinsAlertsBot" target="_blank" style="color:#60a5fa;text-decoration:none;">@StockWinsAlertsBot</a> in Telegram
+                <strong style="color:#93b4fd;">1.</strong> Open <a href="https://t.me/MarketSignalProAlertsBot" target="_blank" style="color:#60a5fa;text-decoration:none;">@MarketSignalProAlertsBot</a> in Telegram
                 · <strong style="color:#93b4fd;">2.</strong> Tap <code style="background:#1a1f2e;color:#4ade80;padding:1px 6px;border-radius:3px;">/start</code>
                 · <strong style="color:#93b4fd;">3.</strong> Paste the Chat ID it replies with below
             </div>''', unsafe_allow_html=True)
@@ -5832,7 +5832,7 @@ def page_settings():
         with st.form("tg_setup"):
             tg_id = st.text_input("Telegram Chat ID", value=current_tg_id,
                                     placeholder="e.g. 1234567890",
-                                    help="The number @StockWinsAlertsBot replied with")
+                                    help="The number @MarketSignalProAlertsBot replied with")
             tg_c1, tg_c2 = st.columns(2)
             with tg_c1:
                 tg_save = st.form_submit_button(
@@ -5844,12 +5844,12 @@ def page_settings():
             if tg_save:
                 clean = "".join(c for c in tg_id if c.isdigit() or c == "-")
                 if not clean:
-                    st.error("Chat ID must be a number. Get it from @StockWinsAlertsBot.")
+                    st.error("Chat ID must be a number. Get it from @MarketSignalProAlertsBot.")
                 else:
                     st.session_state.users_db[email]["telegram_chat_id"] = clean
                     _save_global_db(st.session_state.users_db)
                     save_user_to_file(email, st.session_state.users_db[email])
-                    ok, info = _send_telegram(clean, "✅ <b>StockWins Telegram alerts connected!</b>\n\nYou'll get instant alerts here.")
+                    ok, info = _send_telegram(clean, "✅ <b>MarketSignalPro Telegram alerts connected!</b>\n\nYou'll get instant alerts here.")
                     if ok:
                         st.toast("✈️ Telegram connected — check your phone!", icon="✅")
                         st.success("✅ Test message just sent to your Telegram.")
@@ -6035,7 +6035,7 @@ def page_settings():
                 if current_tg:
                     st.markdown(f'<div style="font-size:12px;color:#4ade80;margin-bottom:8px;">✅ Telegram connected (Chat ID: {current_tg})</div>',unsafe_allow_html=True)
                 else:
-                    st.markdown(f'<div style="font-size:12px;color:#374f6e;line-height:1.8;margin-bottom:8px;">1. Open Telegram → search <strong style="color:#e2e8f0;">@StockWinsAlertsBot</strong><br>2. Send /start to get your Chat ID<br>3. Paste it below</div>',unsafe_allow_html=True)
+                    st.markdown(f'<div style="font-size:12px;color:#374f6e;line-height:1.8;margin-bottom:8px;">1. Open Telegram → search <strong style="color:#e2e8f0;">@MarketSignalProAlertsBot</strong><br>2. Send /start to get your Chat ID<br>3. Paste it below</div>',unsafe_allow_html=True)
                 with st.form("tg_form"):
                     tg_id=st.text_input("Your Telegram Chat ID",value=current_tg,placeholder="1234567890",label_visibility="visible")
                     if st.form_submit_button("Save Telegram Connection",type="primary"):
@@ -6075,7 +6075,7 @@ def page_settings():
                                   help="Browser/mobile push via OneSignal — enable on the Profile tab first")
         with nc2:
             tg_disabled = not bool(db_user.get("telegram_chat_id",""))
-            tg_help = "Connect Telegram in Profile tab first" if tg_disabled else "Push messages via @StockWinsAlertsBot"
+            tg_help = "Connect Telegram in Profile tab first" if tg_disabled else "Push messages via @MarketSignalProAlertsBot"
             new_telegram = st.toggle("✈️ Telegram alerts",
                                        value=notif_prefs.get("telegram_enabled", False),
                                        key="np_telegram", disabled=tg_disabled, help=tg_help)
@@ -6084,7 +6084,7 @@ def page_settings():
                                     value=notif_prefs.get("email_enabled", True),
                                     key="np_email")
         if tg_disabled:
-            st.caption("⚠️ Connect Telegram in the Profile tab to enable @StockWinsAlertsBot alerts.")
+            st.caption("⚠️ Connect Telegram in the Profile tab to enable @MarketSignalProAlertsBot alerts.")
 
         st.markdown('<div class="div-line"></div>',unsafe_allow_html=True)
 
@@ -6196,7 +6196,7 @@ def page_settings():
                         st.error(err)
                 st.markdown(f'<div style="font-size:12px;color:#374f6e;margin-top:8px;line-height:1.7;">The billing portal lets you: update payment method · view invoices · cancel subscription · download receipts</div>',unsafe_allow_html=True)
             else:
-                st.markdown(f'<div style="background:#0e1421;border:1px solid {BORDER};border-radius:7px;padding:12px 14px;font-size:12px;color:#374f6e;">To manage your subscription, email <a href="mailto:support@stockwins.com" style="color:#93b4fd;">support@stockwins.com</a></div>',unsafe_allow_html=True)
+                st.markdown(f'<div style="background:#0e1421;border:1px solid {BORDER};border-radius:7px;padding:12px 14px;font-size:12px;color:#374f6e;">To manage your subscription, email <a href="mailto:support@marketsignalpro.com" style="color:#93b4fd;">support@marketsignalpro.com</a></div>',unsafe_allow_html=True)
 
         if is_premium():
             st.markdown('<div class="div-line"></div>',unsafe_allow_html=True)
@@ -6318,7 +6318,7 @@ def page_admin():
         st.markdown('<div class="sec-hd" style="font-size:13px;">Ranking & Display Controls</div>',unsafe_allow_html=True)
         rc1,rc2=st.columns(2,gap="small")
         with rc1:
-            sort_by=st.selectbox("Default sort order",["SW Score","% Change Today","Volume Ratio","Short Float","Social Sentiment"],key="ranking_sort_ctrl")
+            sort_by=st.selectbox("Default sort order",["Signal Score","% Change Today","Volume Ratio","Short Float","Social Sentiment"],key="ranking_sort_ctrl")
             st.session_state.ranking_sort=sort_by
         with rc2:
             filter_by=st.selectbox("Default category filter",["All","Free Only","Premium Only","Composite Only"],key="ranking_filter_ctrl")
@@ -6337,8 +6337,8 @@ def page_admin():
             <div style="font-size:12px;color:#374f6e;line-height:2.0;">
             <strong style="color:#e2e8f0;">1. Create a Stripe account</strong> at <a href="https://stripe.com" target="_blank" style="color:#93b4fd;">stripe.com</a><br>
             <strong style="color:#e2e8f0;">2. Create Products & Prices</strong> in Stripe Dashboard → Products:<br>
-            &nbsp;&nbsp;&nbsp;&nbsp;• StockWins Premium Monthly → Recurring $29/mo → copy Price ID<br>
-            &nbsp;&nbsp;&nbsp;&nbsp;• StockWins Annual Plan → Recurring $199/yr → copy Price ID<br>
+            &nbsp;&nbsp;&nbsp;&nbsp;• MarketSignalPro Premium Monthly → Recurring $29/mo → copy Price ID<br>
+            &nbsp;&nbsp;&nbsp;&nbsp;• MarketSignalPro Annual Plan → Recurring $199/yr → copy Price ID<br>
             <strong style="color:#e2e8f0;">3. Get your Secret Key</strong> from Stripe Dashboard → Developers → API Keys<br>
             <strong style="color:#e2e8f0;">4. Add to Streamlit Secrets</strong> (Settings → Secrets in your app dashboard):<br>
             </div>
@@ -6356,7 +6356,7 @@ APP_URL = "https://your-app.streamlit.app"</pre>
         st.markdown(f"""<div class="card card-blue" style="margin-top:8px;">
             <div style="font-size:12px;font-weight:700;color:#93b4fd;margin-bottom:6px;">⚠️ Webhook Note for Streamlit</div>
             <div style="font-size:12px;color:#374f6e;line-height:1.8;">
-            Streamlit Community Cloud can't receive webhooks directly. StockWins uses <strong style="color:#e2e8f0;">Checkout Session verification</strong> on the success redirect URL instead. This handles new subscriptions reliably.<br>
+            Streamlit Community Cloud can't receive webhooks directly. MarketSignalPro uses <strong style="color:#e2e8f0;">Checkout Session verification</strong> on the success redirect URL instead. This handles new subscriptions reliably.<br>
             For subscription renewals, cancellations, and failed payments in production, you have two options:<br>
             • <strong style="color:#e2e8f0;">Option A</strong>: Add a lightweight webhook endpoint (Flask/FastAPI on Render.com, free tier) that updates a shared DB<br>
             • <strong style="color:#e2e8f0;">Option B</strong>: Use Stripe's <code style="background:#0e1421;color:#93b4fd;">payment_behavior: allow_incomplete</code> + manual user verification via the Users tab<br>
@@ -6514,9 +6514,9 @@ def _send_verification_email(email, code):
             import requests as _r
             resp = _r.post("https://api.resend.com/emails",
                 headers={"Authorization":f"Bearer {resend_key}","Content-Type":"application/json"},
-                json={"from":"StockWins <noreply@stockwins.com>",
+                json={"from":"MarketSignalPro <noreply@marketsignalpro.com>",
                       "to":[email],
-                      "subject":"Your StockWins verification code",
+                      "subject":"Your MarketSignalPro verification code",
                       "html":f"""<div style="font-family:Inter,sans-serif;background:#07090f;color:#e2e8f0;padding:40px;">
                         <h2 style="color:#2563eb;">Stock<span style="color:#f59e0b;">W</span>ins</h2>
                         <h3>Verify your email</h3>
@@ -6568,7 +6568,7 @@ def page_verify_email():
                     for k in ["_verify_code","_verify_email","_verify_user","_demo_code"]:
                         st.session_state.pop(k,None)
                     st.session_state["_signup_success"] = udata.get("name","")
-                    st.success("✅ Email verified! Welcome to StockWins.")
+                    st.success("✅ Email verified! Welcome to MarketSignalPro.")
                     time.sleep(0.3)
                     nav("dashboard")
                 else:
@@ -6608,7 +6608,7 @@ def page_contact():
             <div style="font-size:28px;margin-bottom:10px;">📧</div>
             <div style="font-size:14px;font-weight:700;color:#e2e8f0;margin-bottom:6px;">Email Support</div>
             <div style="font-size:12px;color:#374f6e;margin-bottom:12px;">For account, billing, and general questions</div>
-            <a href="mailto:support@stockwins.com" style="font-size:13px;font-weight:700;color:#93b4fd;text-decoration:none;">support@stockwins.com</a>
+            <a href="mailto:support@marketsignalpro.com" style="font-size:13px;font-weight:700;color:#93b4fd;text-decoration:none;">support@marketsignalpro.com</a>
             <div style="font-size:11px;color:#2a3a52;margin-top:6px;">Response within 24 hours</div>
         </div>''',unsafe_allow_html=True)
     with top2:
@@ -6630,19 +6630,19 @@ def page_contact():
 
     st.markdown("<br>",unsafe_allow_html=True)
     st.markdown('<div class="sec-hd">💬 AI Support Assistant</div>',unsafe_allow_html=True)
-    st.markdown('<div style="font-size:12px;color:#374f6e;margin-bottom:14px;">Ask anything about StockWins — features, categories, signals, billing, or how to use the platform.</div>',unsafe_allow_html=True)
+    st.markdown('<div style="font-size:12px;color:#374f6e;margin-bottom:14px;">Ask anything about MarketSignalPro — features, categories, signals, billing, or how to use the platform.</div>',unsafe_allow_html=True)
 
     # Chat history
     if "support_chat" not in st.session_state:
         st.session_state.support_chat = [
-            {"role":"assistant","content":"Hi! I'm the StockWins support assistant. I can help with questions about the platform, our composite signal categories, billing, features, or anything else. What can I help you with today?"}
+            {"role":"assistant","content":"Hi! I'm the MarketSignalPro support assistant. I can help with questions about the platform, our composite signal categories, billing, features, or anything else. What can I help you with today?"}
         ]
 
     # Display chat
     for msg in st.session_state.support_chat:
         if msg["role"]=="assistant":
             st.markdown(f'''<div style="display:flex;gap:10px;margin-bottom:12px;align-items:flex-start;">
-                <div style="background:{BLUE};border-radius:50%;width:28px;height:28px;display:flex;align-items:center;justify-content:center;font-size:12px;flex-shrink:0;">SW</div>
+                <div style="background:{BLUE};border-radius:50%;width:28px;height:28px;display:flex;align-items:center;justify-content:center;font-size:12px;flex-shrink:0;">MSP</div>
                 <div style="background:{CARD};border:1px solid {BORDER};border-radius:0 10px 10px 10px;padding:10px 14px;font-size:13px;color:#d1d9e6;max-width:80%;line-height:1.6;">{msg["content"]}</div>
             </div>''',unsafe_allow_html=True)
         else:
@@ -6662,17 +6662,17 @@ def page_contact():
             with st.spinner(""):
                 try:
                     import requests as _r
-                    sys_prompt = """You are the StockWins customer support assistant. StockWins is a premium stock intelligence platform.
+                    sys_prompt = """You are the MarketSignalPro customer support assistant. MarketSignalPro is a premium stock intelligence platform.
 
 Key facts:
-- StockWins has 17 proprietary composite signal categories combining RSI, MACD, volume, social sentiment, short interest
+- MarketSignalPro has 17 AI-powered composite signal categories combining RSI, MACD, volume, social sentiment, short interest
 - Free plan: 7 composite categories, market overview, watchlist (10 stocks), BUY/AVOID signals
 - Premium ($29/mo): All 17 categories, squeeze scanner, advanced screener, BI analytics, score breakdowns, unlimited watchlist
 - Annual ($199/yr): Everything in Premium + priority support, early access, export, API access
 - Data sources: Yahoo Finance (free), Twelve Data (optional), StockTwits (social sentiment)
 - Signals are educational/algorithmic only — NOT financial advice
 - Back button works to go to previous page
-- For billing: support@stockwins.com
+- For billing: support@marketsignalpro.com
 
 Be helpful, concise, and friendly. If asked about a specific stock or investment advice, remind them signals are educational only."""
                     msgs = [{"role":m["role"],"content":m["content"]} for m in st.session_state.support_chat]
@@ -6680,7 +6680,7 @@ Be helpful, concise, and friendly. If asked about a specific stock or investment
                     try: anth_key = st.secrets.get("ANTHROPIC_API_KEY","")
                     except: anth_key = ""
                     if not anth_key:
-                        answer = "Support chat requires ANTHROPIC_API_KEY in Streamlit Secrets. In the meantime, email support@stockwins.com — we respond within 24 hours!"
+                        answer = "Support chat requires ANTHROPIC_API_KEY in Streamlit Secrets. In the meantime, email support@marketsignalpro.com — we respond within 24 hours!"
                     else:
                         resp = _r.post("https://api.anthropic.com/v1/messages",
                             headers={"Content-Type":"application/json",
@@ -6692,9 +6692,9 @@ Be helpful, concise, and friendly. If asked about a specific stock or investment
                         if resp.status_code==200:
                             answer = resp.json()["content"][0]["text"]
                         else:
-                            answer = f"I'm having trouble right now (status {resp.status_code}). Please email support@stockwins.com for immediate help."
+                            answer = f"I'm having trouble right now (status {resp.status_code}). Please email support@marketsignalpro.com for immediate help."
                 except Exception as e:
-                    answer = f"Connection issue. Please email support@stockwins.com — we typically respond within 24 hours."
+                    answer = f"Connection issue. Please email support@marketsignalpro.com — we typically respond within 24 hours."
             st.session_state.support_chat.append({"role":"assistant","content":answer})
             st.rerun()
 
@@ -6708,10 +6708,10 @@ Be helpful, concise, and friendly. If asked about a specific stock or investment
     st.markdown('<div class="sec-hd">Common Questions</div>',unsafe_allow_html=True)
     faqs=[
         ("How do I upgrade to Premium?","Go to Pricing in the top nav, select Premium Monthly or Annual, and click the subscribe button. Payment is processed securely via Stripe."),
-        ("What are the composite signal categories?","StockWins has 17 proprietary categories combining multiple signals simultaneously — like RSI + short float + social sentiment — to surface setups not visible through standard TA."),
-        ("Is this financial advice?","No. StockWins provides algorithmic, educational signals only. Nothing constitutes financial advice. Always consult a licensed financial advisor."),
+        ("What are the composite signal categories?","MarketSignalPro has 17 proprietary categories combining multiple signals simultaneously — like RSI + short float + social sentiment — to surface setups not visible through standard TA."),
+        ("Is this financial advice?","No. MarketSignalPro provides algorithmic, educational signals only. Nothing constitutes financial advice. Always consult a licensed financial advisor."),
         ("How do I cancel my subscription?","Go to Settings → Subscription → Open Billing Portal. You can cancel anytime with no questions asked."),
-        ("Can I get a refund?","Yes — contact support@stockwins.com within 30 days of your subscription start date."),
+        ("Can I get a refund?","Yes — contact support@marketsignalpro.com within 30 days of your subscription start date."),
     ]
     for q,a in faqs:
         with st.expander(q):
@@ -6776,7 +6776,7 @@ if st.session_state.get("_redirect_url"):
             <div style="font-size:12px;font-weight:700;color:{GREEN};margin-bottom:8px;">After Payment ✓</div>
             <div style="font-size:12px;color:#374f6e;line-height:2.2;">1. Account upgrades instantly<br>2. All premium categories unlock<br>3. Set up watchlist &amp; alerts<br>4. Explore BI Analytics<br>5. Configure email digests</div>
         </div>
-        <div style="margin-top:12px;text-align:center;font-size:12px;color:#2a3a52;">Questions? <a href="mailto:support@stockwins.com" style="color:#93b4fd;">support@stockwins.com</a></div>
+        <div style="margin-top:12px;text-align:center;font-size:12px;color:#2a3a52;">Questions? <a href="mailto:support@marketsignalpro.com" style="color:#93b4fd;">support@marketsignalpro.com</a></div>
         """, unsafe_allow_html=True)
     st.stop()
 
@@ -6794,8 +6794,8 @@ if st.session_state.get("_push_registered"):
                     Push Notifications Enabled!
                 </div>
                 <div style="font-size:13px;color:#374f6e;line-height:1.6;">
-                    You'll receive instant push alerts when StockWins detects new opportunities on stocks you follow.
-                    <br><strong style="color:#e2e8f0;">Pro tip:</strong> On mobile, tap the share icon and "Add to Home Screen" to install StockWins as an app.
+                    You'll receive instant push alerts when MarketSignalPro detects new opportunities on stocks you follow.
+                    <br><strong style="color:#e2e8f0;">Pro tip:</strong> On mobile, tap the share icon and "Add to Home Screen" to install MarketSignalPro as an app.
                 </div>
             </div>
         </div>
@@ -6811,7 +6811,7 @@ if st.session_state.get("_pay_success"):
                 padding:28px 32px;margin-bottom:20px;text-align:center;">
         <div style="font-size:48px;margin-bottom:12px;">🎉</div>
         <div style="font-size:24px;font-weight:800;color:#4ade80;margin-bottom:8px;">
-            Welcome to StockWins {plan_name}!
+            Welcome to MarketSignalPro {plan_name}!
         </div>
         <div style="font-size:14px;color:#374f6e;margin-bottom:20px;line-height:1.7;">
             Your account has been upgraded. You now have access to all {plan_name} features.<br>
@@ -6855,7 +6855,7 @@ if st.session_state.get("_pay_error"):
         </div>
         <div style="font-size:13px;color:#374f6e;margin-bottom:8px;">{err}</div>
         <div style="font-size:12px;color:#2a3a52;">
-            Need help? Email <a href="mailto:support@stockwins.com" style="color:#93b4fd;">support@stockwins.com</a>
+            Need help? Email <a href="mailto:support@marketsignalpro.com" style="color:#93b4fd;">support@marketsignalpro.com</a>
             and we'll sort it out within 24 hours.
         </div>
     </div>
@@ -6882,7 +6882,7 @@ if st.session_state.get("_logged_out"):
     st.toast("👋 You've been logged out. See you next time!", icon="✅")
 if st.session_state.get("_signup_success"):
     name = st.session_state.pop("_signup_success")
-    st.toast(f"🎉 Account created! Welcome to StockWins, {name}!", icon="🚀")
+    st.toast(f"🎉 Account created! Welcome to MarketSignalPro, {name}!", icon="🚀")
 if st.session_state.get("_login_welcome"):
     name = st.session_state.pop("_login_welcome")
     st.toast(f"👋 Welcome back, {name}!", icon="✅")
