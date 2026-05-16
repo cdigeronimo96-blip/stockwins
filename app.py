@@ -1572,6 +1572,189 @@ html, body, [data-testid="stAppViewContainer"], [data-testid="stMain"] {
 .disc-cat-header, .lock, .card, .sr { max-width: 100% !important; }
 </style>""", unsafe_allow_html=True)
 
+
+st.markdown("""<style>
+/* ─────────────────────────────────────────────────────────────
+   FINAL SHELL / SIDEBAR / OVERFLOW OVERRIDES
+   Keep every page inside the visible main pane and make the sidebar toggle reachable.
+───────────────────────────────────────────────────────────── */
+:root { --msp-shell-max: 1180px; --msp-edge-pad: 28px; --msp-sidebar-w: 252px; }
+html, body, [data-testid="stAppViewContainer"], [data-testid="stMain"], .main, div.block-container {
+  overflow-x: clip !important;
+  max-width: 100% !important;
+}
+.main .block-container, div.block-container {
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+}
+/* One consistent page shell for all internal/public pages */
+.pg,
+.sw-page-shell,
+.sw-hero-row,
+.sw-auth-nav,
+.sw-desktop-topbar {
+  width: min(var(--msp-shell-max), calc(100% - (var(--msp-edge-pad) * 2))) !important;
+  max-width: var(--msp-shell-max) !important;
+  margin-left: auto !important;
+  margin-right: auto !important;
+  box-sizing: border-box !important;
+}
+.pg, .sw-page-shell {
+  padding: 28px 0 52px !important;
+}
+.sw-hero-row {
+  padding: 18px 0 0 !important;
+}
+.sw-desktop-topbar {
+  padding: 10px 0 8px !important;
+  min-height: 54px !important;
+  margin-top: 6px !important;
+  margin-bottom: 0 !important;
+}
+.sw-topbar-logo { margin-left: 0 !important; }
+.sw-topbar-logo span { font-size: 25px !important; }
+.sw-topbar-nav { margin-left: auto !important; gap: 10px !important; }
+.sw-topbar-link { min-width: 104px !important; text-align: center !important; }
+.sw-divider {
+  width: min(var(--msp-shell-max), calc(100% - (var(--msp-edge-pad) * 2))) !important;
+  margin: 0 auto 18px !important;
+}
+/* Signed-in button nav must stay inside the main content pane */
+.sw-auth-nav {
+  margin-top: 10px !important;
+  margin-bottom: 12px !important;
+}
+.sw-auth-nav .stButton>button {
+  min-height: 44px !important;
+  font-size: 13px !important;
+  padding: 8px 10px !important;
+}
+.sw-auth-nav [data-testid="column"]:first-child .stButton>button {
+  font-size: 22px !important;
+  overflow: visible !important;
+}
+/* Prevent any Streamlit columns/grids/cards from creating right-side overflow */
+[data-testid="stHorizontalBlock"], [data-testid="column"], .element-container, iframe, canvas, svg,
+.card, .sr, .stat, .price-card, .price-card-featured, .price-card-gold {
+  max-width: 100% !important;
+  box-sizing: border-box !important;
+}
+iframe { overflow: hidden !important; }
+/* Landing hero balance */
+.sw-hero-left-block {
+  padding: 14px 0 16px 0 !important;
+  max-width: 430px !important;
+}
+.sw-hero-demo-wrap {
+  max-width: 560px !important;
+  margin-left: auto !important;
+  overflow: hidden !important;
+}
+/* Sidebar sizing/spacing */
+[data-testid="stSidebar"] {
+  width: var(--msp-sidebar-w) !important;
+  min-width: var(--msp-sidebar-w) !important;
+  max-width: var(--msp-sidebar-w) !important;
+  background: #080d19 !important;
+  border-right: 1px solid rgba(255,255,255,0.09) !important;
+  overflow: visible !important;
+}
+[data-testid="stSidebar"] > div {
+  padding: 10px 10px 18px !important;
+  overflow-x: hidden !important;
+}
+[data-testid="stSidebar"] .stButton>button {
+  min-height: 40px !important;
+  padding: 9px 12px !important;
+  margin: 4px 0 !important;
+  color: #c8d8ea !important;
+  background: rgba(255,255,255,0.035) !important;
+  border: 1px solid rgba(255,255,255,0.065) !important;
+  border-left: 2px solid rgba(37,99,235,0.45) !important;
+  border-radius: 0 !important;
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  justify-content: flex-start !important;
+}
+[data-testid="stSidebar"] .stButton>button:hover {
+  color: #fff !important;
+  background: rgba(37,99,235,0.18) !important;
+  border-left-color: #60a5fa !important;
+}
+/* Make the native Streamlit toggle clickable and obvious.
+   Open sidebar: button sits on right edge of sidebar.
+   Collapsed sidebar: button sits on far-left visible rail. */
+[data-testid="stSidebarCollapseButton"] {
+  position: fixed !important;
+  left: calc(var(--msp-sidebar-w) - 50px) !important;
+  top: 10px !important;
+  width: 42px !important;
+  height: 42px !important;
+  z-index: 2147483647 !important;
+  pointer-events: auto !important;
+  background: #0d2548 !important;
+  border: 1px solid rgba(96,165,250,0.95) !important;
+  border-radius: 10px !important;
+  box-shadow: 0 0 0 2px rgba(37,99,235,0.28), 0 8px 28px rgba(0,0,0,0.55) !important;
+}
+[data-testid="collapsedControl"], [data-testid="stSidebarCollapsedControl"] {
+  position: fixed !important;
+  left: 12px !important;
+  top: 12px !important;
+  width: 48px !important;
+  height: 48px !important;
+  z-index: 2147483647 !important;
+  pointer-events: auto !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+  display: flex !important;
+  background: #0d2548 !important;
+  border: 1px solid rgba(96,165,250,1) !important;
+  border-radius: 12px !important;
+  box-shadow: 0 0 0 3px rgba(37,99,235,0.30), 0 8px 30px rgba(0,0,0,0.60) !important;
+}
+[data-testid="collapsedControl"] svg,
+[data-testid="stSidebarCollapsedControl"] svg,
+[data-testid="stSidebarCollapseButton"] svg {
+  width: 24px !important;
+  height: 24px !important;
+  color: #ffffff !important;
+  fill: #ffffff !important;
+}
+[data-testid="collapsedControl"] svg,
+[data-testid="stSidebarCollapsedControl"] svg { transform: rotate(180deg) !important; }
+@media (max-width: 900px) {
+  :root { --msp-edge-pad: 14px; --msp-sidebar-w: min(82vw, 310px); }
+  .pg, .sw-page-shell { padding: 18px 0 34px !important; }
+  .sw-hero-row { padding: 12px 0 0 !important; }
+  [data-testid="stSidebar"] { width: var(--msp-sidebar-w) !important; min-width: var(--msp-sidebar-w) !important; max-width: var(--msp-sidebar-w) !important; }
+  [data-testid="stSidebarCollapseButton"] { left: calc(var(--msp-sidebar-w) - 54px) !important; }
+}
+</style>""", unsafe_allow_html=True)
+
+
+st.markdown("""
+<script>
+(function(){
+  function fixMspSidebarToggle(){
+    const openBtn = document.querySelector('[data-testid="stSidebarCollapseButton"]');
+    const collapsedBtn = document.querySelector('[data-testid="collapsedControl"], [data-testid="stSidebarCollapsedControl"]');
+    [openBtn, collapsedBtn].forEach(function(btn){
+      if(!btn) return;
+      btn.style.pointerEvents = 'auto';
+      btn.style.zIndex = '2147483647';
+      btn.style.opacity = '1';
+      btn.style.visibility = 'visible';
+      btn.removeAttribute('hidden');
+    });
+  }
+  window.addEventListener('load', fixMspSidebarToggle);
+  setInterval(fixMspSidebarToggle, 250);
+  new MutationObserver(fixMspSidebarToggle).observe(document.body, {childList:true, subtree:true, attributes:true});
+})();
+</script>
+""", unsafe_allow_html=True)
+
 # ─────────────────────────────────────────────────────────────
 # CONSTANTS
 # ─────────────────────────────────────────────────────────────
@@ -2822,10 +3005,16 @@ def page_landing():
         </div>
         """, unsafe_allow_html=True)
 
-        # ── Single CTA section (works on all screens) ──
-        if st.button("🚀 Create Free Account", key="h_su", type="primary", use_container_width=True): nav("signup")
-        st.markdown('<div style="text-align:center;font-size:13px;color:#6b7fa0;padding:14px 0 6px;">Already have an account?</div>', unsafe_allow_html=True)
-        if st.button("Sign In", key="h_login", use_container_width=True): nav("login")
+        # ── Single CTA section (desktop-constrained, mobile-friendly) ──
+        st.markdown('<div class="msp-cta-wrap">', unsafe_allow_html=True)
+        _cta_left, _cta_mid, _cta_right = st.columns([0.02, 0.76, 0.22], gap="small")
+        with _cta_mid:
+            if st.button("🚀 Create Free Account", key="h_su", type="primary", use_container_width=True):
+                nav("signup")
+            st.markdown('<div style="text-align:center;font-size:13px;color:#6b7fa0;padding:14px 0 6px;">Already have an account?</div>', unsafe_allow_html=True)
+            if st.button("Sign In", key="h_login", use_container_width=True):
+                nav("login")
+        st.markdown('</div>', unsafe_allow_html=True)
 
         # Trust line under CTA
         st.markdown(f"""
