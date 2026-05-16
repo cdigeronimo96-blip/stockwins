@@ -2248,7 +2248,7 @@ NAV_CSS = """<style>
 
 LOGO_HTML = """<div class="sw-logo-click-target">
 <span style="font-family:'JetBrains Mono',monospace;font-size:24px;font-weight:700;letter-spacing:-0.5px;">
-<span style="color:#e2e8f0;">Stock</span><span style="color:#f59e0b;">W</span><span style="color:#e2e8f0;">ins</span>
+<span style="color:#e2e8f0;">Market</span><span style="color:#f59e0b;">Signal</span><span style="color:#e2e8f0;">Pro</span>
 </span></div>"""
 
 def render_logo_click(key,dest):
@@ -2354,78 +2354,166 @@ def _render_bottom_nav(active=""):
 
 def render_topbar(active=""):
     st.markdown(NAV_CSS, unsafe_allow_html=True)
-    # ── PWA bottom nav (only visible when launched as installed app, hidden on desktop & in browser) ──
     if is_authed():
         _render_bottom_nav(active)
 
-    # ════════════════════════════════════════════════════════════
-    # DESKTOP TOPBAR — pure HTML/CSS so we can reliably hide on mobile
-    # Uses URL params for navigation (no Streamlit button machinery)
-    # ════════════════════════════════════════════════════════════
-    msp_logo_desktop = '''<span style="font-family:'Inter',sans-serif;font-size:28px;font-weight:900;letter-spacing:-1px;display:inline-flex;align-items:center;">
-        <span style="color:#e2e8f0;">Market</span><span style="color:#f59e0b;">Signal</span><span style="color:#e2e8f0;">Pro</span>
-    </span>'''
-    msp_logo_mobile = '''<span style="font-family:'Inter',sans-serif;font-size:22px;font-weight:900;letter-spacing:-0.8px;display:inline-flex;align-items:center;">
-        <span style="color:#e2e8f0;">Market</span><span style="color:#f59e0b;">Signal</span><span style="color:#e2e8f0;">Pro</span>
-    </span>'''
+    # ── Topbar button CSS — makes st.button look like sleek nav links ──
+    BLUE_LOC = "#2563eb"
+    st.markdown(f"""
+    <style>
+    /* ════ TOPBAR BUTTON STYLES ════ */
+    /* Logo button */
+    .sw-tb-logo .stButton>button {{
+        background:transparent !important; border:none !important;
+        box-shadow:none !important; padding:0 4px !important;
+        height:40px !important; min-height:40px !important;
+        font-family:'Inter',sans-serif !important;
+        font-size:20px !important; font-weight:900 !important;
+        letter-spacing:-0.8px !important; color:#e2e8f0 !important;
+        text-shadow:none !important; white-space:nowrap !important;
+        width:auto !important;
+    }}
+    .sw-tb-logo .stButton>button:hover {{ color:#f59e0b !important; }}
+    /* Nav item buttons */
+    .sw-tb-btn .stButton>button {{
+        background:transparent !important;
+        border:1px solid transparent !important;
+        color:#8a9ab5 !important; font-size:13px !important;
+        font-weight:500 !important; height:34px !important;
+        min-height:34px !important; padding:0 11px !important;
+        border-radius:7px !important; white-space:nowrap !important;
+        letter-spacing:0.1px !important;
+        transition:all 0.15s ease !important;
+    }}
+    .sw-tb-btn .stButton>button:hover {{
+        background:rgba(37,99,235,0.1) !important;
+        border-color:rgba(37,99,235,0.35) !important;
+        color:#93b4fd !important;
+    }}
+    /* Active nav item */
+    .sw-tb-active .stButton>button {{
+        background:rgba(37,99,235,0.14) !important;
+        border-color:rgba(37,99,235,0.5) !important;
+        color:#60a5fa !important; font-weight:700 !important;
+    }}
+    /* Primary CTA (Sign Up) */
+    .sw-tb-primary .stButton>button {{
+        background:{BLUE_LOC} !important; border-color:{BLUE_LOC} !important;
+        color:#fff !important; font-weight:700 !important;
+        font-size:13px !important; height:34px !important; min-height:34px !important;
+        padding:0 14px !important; border-radius:7px !important;
+    }}
+    .sw-tb-primary .stButton>button:hover {{
+        background:#1d4ed8 !important;
+        box-shadow:0 4px 14px rgba(37,99,235,0.45) !important;
+    }}
+    /* Icon buttons (settings, logout) */
+    .sw-tb-icon .stButton>button {{
+        background:rgba(255,255,255,0.04) !important;
+        border:1px solid rgba(255,255,255,0.12) !important;
+        color:#a8bdd4 !important; height:34px !important;
+        min-height:34px !important; padding:0 !important;
+        border-radius:7px !important; font-size:16px !important;
+        width:36px !important; min-width:36px !important;
+    }}
+    .sw-tb-icon .stButton>button:hover {{
+        background:rgba(37,99,235,0.1) !important;
+        border-color:rgba(37,99,235,0.4) !important;
+    }}
+    /* Topbar row divider */
+    .sw-divider {{border:none;border-top:1px solid rgba(255,255,255,0.06);margin:0 0 16px;}}
+    /* Mobile: hide desktop topbar columns */
+    @media(max-width:900px) {{
+        div[data-testid="stHorizontalBlock"]:has(.sw-tb-btn) {{
+            display:none !important;
+        }}
+    }}
+    </style>
+    """, unsafe_allow_html=True)
+
+    # ── MSP logo HTML (styled text, not a button for logo — keeps brand look) ──
+    MSP_LOGO = '<span style="font-family:\'Inter\',sans-serif;font-size:20px;font-weight:900;letter-spacing:-0.8px;cursor:pointer;"><span style="color:#e2e8f0;">Market</span><span style="color:#f59e0b;">Signal</span><span style="color:#e2e8f0;">Pro</span></span>'
+
     if is_authed():
-        pages=[("Dashboard","dashboard"),("Discover","discover"),("Watchlist","watchlist"),
-               ("Screener","screener"),("BI","bi_dashboard"),("Pricing","pricing"),("Contact","contact")]
+        pages = [("Dashboard","dashboard"),("Discover","discover"),("Watchlist","watchlist"),
+                 ("Screener","screener"),("BI","bi_dashboard"),("Pricing","pricing"),("Contact","contact")]
         if is_admin(): pages.append(("🛠 Admin","admin"))
 
-        ri={"owner":"👑","admin":"🛡️","premium":"⭐","free":"👤"}.get(st.session_state.role,"👤")
-        user_name = st.session_state.user.get("name","")
+        ri = {"owner":"👑","admin":"🛡️","premium":"⭐","free":"👤"}.get(st.session_state.role,"👤")
+        first = (st.session_state.user.get("name","") or "").split()[0]
 
-        # Build nav links as pure HTML
-        nav_links = ""
-        for lbl, pg in pages:
-            is_active_cls = " active" if active == pg else ""
-            nav_links += f'<a href="?page={pg}" class="sw-topbar-link{is_active_cls}">{lbl}</a>'
+        # Columns: logo | ...nav items... | user-label | ⚙️ | ↩️
+        ratios = [2.2] + [0.85]*len(pages) + [1.2, 0.45, 0.45]
+        cols = st.columns(ratios, gap="small")
 
-        st.markdown(f"""
-        <div class="sw-desktop-topbar">
-            <div class="sw-topbar-logo">
-                <a href="?page=dashboard" style="text-decoration:none;">{msp_logo_desktop}</a>
-            </div>
-            <div class="sw-topbar-nav">{nav_links}</div>
-            <div class="sw-topbar-user">
-                <span style="font-size:12px;color:#6b7fa0;white-space:nowrap;">{ri} {user_name}</span>
-                <a href="?page=settings" class="sw-topbar-icon" title="Settings">⚙️</a>
-                <a href="?page=__logout__" class="sw-topbar-icon" title="Log out">↩️</a>
-            </div>
-        </div>
-        """, unsafe_allow_html=True)
+        with cols[0]:
+            st.markdown(f'<div class="sw-tb-logo">', unsafe_allow_html=True)
+            if st.button("MarketSignalPro", key="tb_logo_auth"):
+                nav("dashboard")
+            st.markdown('</div>', unsafe_allow_html=True)
 
-        # Mobile-only topbar: logo + tiny settings icon
+        for i, (lbl, pg) in enumerate(pages):
+            with cols[i + 1]:
+                cls = "sw-tb-active" if active == pg else "sw-tb-btn"
+                st.markdown(f'<div class="{cls}">', unsafe_allow_html=True)
+                if st.button(lbl, key=f"tb_{pg}"):
+                    nav(pg)
+                st.markdown('</div>', unsafe_allow_html=True)
+
+        # User label (non-clickable)
+        with cols[len(pages) + 1]:
+            st.markdown(f'<div style="font-size:11px;color:#6b7fa0;text-align:center;padding-top:10px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{ri} {first}</div>', unsafe_allow_html=True)
+
+        with cols[len(pages) + 2]:
+            st.markdown('<div class="sw-tb-icon">', unsafe_allow_html=True)
+            if st.button("⚙️", key="tb_settings"):
+                nav("settings")
+            st.markdown('</div>', unsafe_allow_html=True)
+
+        with cols[len(pages) + 3]:
+            st.markdown('<div class="sw-tb-icon">', unsafe_allow_html=True)
+            if st.button("↩️", key="tb_logout"):
+                logout()
+            st.markdown('</div>', unsafe_allow_html=True)
+
+        # Mobile topbar (HTML visual only — sidebar handles mobile nav)
         st.markdown(f"""
         <div class="sw-mobile-topbar-bar">
-            <a href="?page=dashboard" class="sw-mobile-logo">{msp_logo_mobile}</a>
-            <a href="?page=settings" class="sw-mobile-icon">⚙️</a>
+            {MSP_LOGO}
         </div>
         """, unsafe_allow_html=True)
+
     else:
-        # Logged-out: same approach
+        # Guest: Logo | Features | Pricing | Contact | Login | Sign Up →
+        ratios = [2.5, 0.85, 0.85, 0.85, 0.85, 1.2]
+        cols = st.columns(ratios, gap="small")
+
+        with cols[0]:
+            st.markdown('<div class="sw-tb-logo">', unsafe_allow_html=True)
+            if st.button("MarketSignalPro", key="tb_logo_guest"):
+                nav("landing")
+            st.markdown('</div>', unsafe_allow_html=True)
+
+        for i, (lbl, pg) in enumerate([("Features","features"),("Pricing","pricing"),("Contact","contact"),("Login","login")]):
+            with cols[i + 1]:
+                st.markdown('<div class="sw-tb-btn">', unsafe_allow_html=True)
+                if st.button(lbl, key=f"tb_g_{pg}"):
+                    nav(pg)
+                st.markdown('</div>', unsafe_allow_html=True)
+
+        with cols[5]:
+            st.markdown('<div class="sw-tb-primary">', unsafe_allow_html=True)
+            if st.button("Sign Up →", key="tb_g_signup"):
+                nav("signup")
+            st.markdown('</div>', unsafe_allow_html=True)
+
+        # Mobile logo
         st.markdown(f"""
-        <div class="sw-desktop-topbar">
-            <div class="sw-topbar-logo">
-                <a href="?page=landing" style="text-decoration:none;">{msp_logo_desktop}</a>
-            </div>
-            <div class="sw-topbar-nav">
-                <a href="?page=features" class="sw-topbar-link">Features</a>
-                <a href="?page=pricing" class="sw-topbar-link">Pricing</a>
-                <a href="?page=contact" class="sw-topbar-link">Contact</a>
-                <a href="?page=login" class="sw-topbar-link">Login</a>
-                <a href="?page=signup" class="sw-topbar-link primary">Sign Up →</a>
-            </div>
+        <div class="sw-mobile-topbar-bar">
+            {MSP_LOGO}
         </div>
         """, unsafe_allow_html=True)
 
-        # Mobile-only: just the logo
-        st.markdown(f"""
-        <div class="sw-mobile-topbar-bar">
-            <a href="?page=landing" class="sw-mobile-logo">{msp_logo_mobile}</a>
-        </div>
-        """, unsafe_allow_html=True)
     st.markdown('<hr class="sw-divider">', unsafe_allow_html=True)
 
 # ─────────────────────────────────────────────────────────────
@@ -2491,7 +2579,7 @@ def render_footer():
             <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:24px;margin-bottom:24px;">
                 <div>
                     <span style="font-family:'JetBrains Mono',monospace;font-size:20px;font-weight:700;letter-spacing:-.5px;">
-                        <span style="color:#e2e8f0;">Stock</span><span style="color:{GOLD};">W</span><span style="color:#e2e8f0;">ins</span>
+                        <span style="color:#e2e8f0;">Market</span><span style="color:{GOLD};">Signal</span><span style="color:#e2e8f0;">Pro</span>
                     </span>
                     <div style="font-size:12px;color:rgba(255,255,255,.2);margin-top:6px;">Market Intelligence Platform</div>
                 </div>
@@ -2625,117 +2713,101 @@ DEMO_BI = """<div style="background:#0d1525;border:1px solid rgba(255,255,255,.0
 def page_landing():
     st.markdown(NAV_CSS, unsafe_allow_html=True)
 
-    # Mobile-specific CSS for hero reordering
-    st.markdown("""
+    # ── Landing page uses render_topbar for consistent in-app navigation ──
+    render_topbar()  # guest state (not authed), shows Features/Pricing/Login/Sign Up
+
+    # ── HERO — tighter layout, left-aligned copy + right preview close together ──
+    st.markdown(f"""
     <style>
-    /* On mobile: hero headline must appear BEFORE the demo widget */
-    @media (max-width: 992px) {
-        .sw-hero-row [data-testid="stHorizontalBlock"] {
-            flex-direction: column !important;
-        }
-        .sw-hero-row [data-testid="column"]:first-child {
-            order: 1 !important;
-        }
-        .sw-hero-row [data-testid="column"]:nth-child(2) {
-            order: 2 !important;
-        }
-        .sw-hero-left-block {
-            padding: 24px 0 16px !important;
-            text-align: center !important;
-        }
-        .hero-h1 {
-            font-size: 32px !important;
-            line-height: 1.15 !important;
-        }
-        .hero-sub {
-            font-size: 14px !important;
-            padding: 0 8px !important;
-        }
-        /* Hide the secondary demo widget on phones — too noisy for first impression */
-        .sw-hero-demo-wrap {
-            display: none !important;
-        }
-        /* Hide desktop topbar nav on mobile — use Streamlit's hamburger menu instead */
-        .sw-desktop-nav {
-            display: none !important;
-        }
-    }
+    .hero-wrap {{
+        max-width:1280px; width:100%; margin:0 auto;
+        padding:32px 24px 0;
+    }}
+    /* Remove Streamlit column gap artifacts */
+    .hero-wrap [data-testid="stHorizontalBlock"] {{ gap:0 !important; align-items:center !important; }}
+    .hero-wrap [data-testid="column"]:first-child {{ padding-right:8px !important; }}
+    .hero-wrap [data-testid="column"]:last-child  {{ padding-left:8px !important; }}
+    /* Hero typography */
+    .hero-eyebrow {{ font-size:10px; font-weight:800; color:{BLUE}; letter-spacing:2.5px; text-transform:uppercase; margin-bottom:14px; }}
+    .hero-h1 {{ font-size:44px !important; font-weight:900; color:#f1f5f9; line-height:1.06; letter-spacing:-2px; margin:0 0 14px; }}
+    .hero-h1 .hi {{ color:{BLUE}; }}
+    .hero-h1 .hg {{ color:{GOLD}; }}
+    .hero-sub {{ font-size:15px; color:#4a5e7a; line-height:1.7; margin:0 0 24px; max-width:420px; }}
+    /* CTA buttons - constrained width */
+    .hero-cta-wrap .stButton>button {{
+        max-width:400px !important;
+        font-size:14px !important;
+        font-weight:700 !important;
+        height:46px !important;
+        min-height:46px !important;
+        border-radius:9px !important;
+    }}
+    .hero-cta-secondary .stButton>button {{
+        background:rgba(255,255,255,0.05) !important;
+        border:1px solid rgba(255,255,255,0.15) !important;
+        color:#b8cce0 !important;
+        max-width:400px !important;
+        height:42px !important;
+        min-height:42px !important;
+    }}
+    /* Trust line */
+    .hero-trust {{ font-size:11px; color:#4a5e7a; display:flex; gap:12px; flex-wrap:wrap; margin-top:14px; align-items:center; }}
+    /* Mobile */
+    @media(max-width:900px) {{
+        .hero-wrap {{ padding:18px 14px 0; }}
+        .hero-h1 {{ font-size:30px !important; letter-spacing:-1px !important; }}
+        .hero-sub {{ font-size:13px; }}
+    }}
     </style>
     """, unsafe_allow_html=True)
 
-    # ── TOPBAR — pure HTML for reliable mobile hiding ──
-    st.markdown(f"""
-    <div class="sw-desktop-topbar">
-        <div class="sw-topbar-logo">
-            <span style="font-family:'JetBrains Mono',monospace;font-size:22px;font-weight:700;letter-spacing:-0.5px;">
-                <a href="?topbar_nav=landing" style="text-decoration:none;">
-                    <span style="color:#e2e8f0;">Stock</span><span style="color:#f59e0b;">W</span><span style="color:#e2e8f0;">ins</span>
-                </a>
-            </span>
-        </div>
-        <div class="sw-topbar-nav">
-            <a href="?topbar_nav=features" class="sw-topbar-link">Features</a>
-            <a href="?topbar_nav=pricing" class="sw-topbar-link">Pricing</a>
-            <a href="?topbar_nav=login" class="sw-topbar-link">Login</a>
-            <a href="?topbar_nav=signup" class="sw-topbar-link primary">Sign Up →</a>
-        </div>
-    </div>
-    <div class="sw-mobile-topbar-bar">
-        <a href="?topbar_nav=landing" class="sw-mobile-logo">
-            <span style="font-family:'JetBrains Mono',monospace;font-size:20px;font-weight:700;letter-spacing:-0.5px;">
-                <span style="color:#e2e8f0;">Stock</span><span style="color:#f59e0b;">W</span><span style="color:#e2e8f0;">ins</span>
-            </span>
-        </a>
-    </div>
-    <hr class="sw-divider">
-    """, unsafe_allow_html=True)
+    st.markdown('<div class="hero-wrap">', unsafe_allow_html=True)
+    hl, hr = st.columns([4, 6], gap="small")
 
-    # ── HERO ──
-    p_idx=st.session_state.get("hero_panel",0)
-    st.markdown('<div class="sw-hero-row">', unsafe_allow_html=True)
-    hl,hr=st.columns([5,5],gap="large")
     with hl:
         st.markdown(f"""
-        <div class="sw-hero-left-block" style="padding:48px 0 32px 48px;">
-            <div style="font-size:11px;font-weight:700;color:{BLUE};letter-spacing:2.5px;text-transform:uppercase;margin-bottom:16px;">Smart Stock Discovery Platform</div>
+        <div style="padding:12px 0 16px;">
+            <div class="hero-eyebrow">AI-Powered Stock Intelligence</div>
             <div class="hero-h1">Spot Market<br>Opportunities<br><span class="hi">Before They</span><br><span class="hg">Get Crowded</span></div>
-            <div class="hero-sub">Discover trending stocks, squeeze candidates, and momentum shifts using our proprietary 17-signal composite scoring.</div>
+            <div class="hero-sub">Discover trending stocks, squeeze candidates &amp; momentum shifts with our proprietary 17-signal composite scoring.</div>
         </div>
         """, unsafe_allow_html=True)
 
-        # ── Single CTA section (works on all screens) ──
-        if st.button("🚀 Create Free Account", key="h_su", type="primary", use_container_width=True): nav("signup")
-        st.markdown('<div style="text-align:center;font-size:13px;color:#6b7fa0;padding:14px 0 6px;">Already have an account?</div>', unsafe_allow_html=True)
-        if st.button("Sign In", key="h_login", use_container_width=True): nav("login")
+        st.markdown('<div class="hero-cta-wrap">', unsafe_allow_html=True)
+        if st.button("🚀 Create Free Account", key="h_su", type="primary", use_container_width=True):
+            nav("signup")
+        st.markdown('</div>', unsafe_allow_html=True)
 
-        # Trust line under CTA
-        st.markdown(f"""
-        <div style="display:flex;align-items:center;justify-content:center;gap:14px;margin-top:18px;font-size:11px;color:#4a5e7a;flex-wrap:wrap;">
-            <span>✓ Free forever plan</span>
-            <span>·</span>
+        st.markdown('<div style="text-align:left;font-size:12px;color:#6b7fa0;padding:10px 0 4px;">Already have an account?</div>', unsafe_allow_html=True)
+
+        st.markdown('<div class="hero-cta-secondary">', unsafe_allow_html=True)
+        if st.button("Sign In", key="h_login", use_container_width=True):
+            nav("login")
+        st.markdown('</div>', unsafe_allow_html=True)
+
+        st.markdown("""
+        <div class="hero-trust">
+            <span>✓ Free forever</span>
+            <span style="color:#2a3a52;">·</span>
             <span>✓ No credit card</span>
-            <span>·</span>
-            <span>✓ Setup in 30 seconds</span>
+            <span style="color:#2a3a52;">·</span>
+            <span>✓ 30-second setup</span>
         </div>
         """, unsafe_allow_html=True)
 
     with hr:
-        # Self-contained auto-advancing slideshow — rendered in isolated iframe
-        # NOTE: do NOT wrap components.html() in st.markdown divs — causes DOM issues
         hero_comp = (
             '<style>'
             'body{margin:0;padding:0;background:transparent;font-family:Inter,sans-serif;overflow:hidden;}'
-            '.tab-row{display:flex;flex-wrap:wrap;gap:14px 18px;margin-bottom:8px;padding:14px 0 0;}'
-            '.tab-item{font-size:13px;font-weight:500;color:#374f6e;cursor:pointer;'
-            'padding-bottom:5px;border-bottom:2px solid transparent;transition:all 0.2s;white-space:nowrap;}'
+            '.tab-row{display:flex;flex-wrap:wrap;gap:10px 16px;margin-bottom:6px;padding:10px 0 0;}'
+            '.tab-item{font-size:12px;font-weight:500;color:#374f6e;cursor:pointer;'
+            'padding-bottom:4px;border-bottom:2px solid transparent;transition:all 0.2s;white-space:nowrap;}'
             '.tab-item.active{color:#e2e8f0;font-weight:700;border-bottom-color:#2563eb;}'
             '.tab-item:hover{color:#a8bdd4;}'
-            '@media(max-width:768px){.tab-row{gap:10px 14px;}.tab-item{font-size:11px;}}'
-            '.dots{display:flex;gap:6px;margin-bottom:10px;}'
-            '.dot{width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,0.15);cursor:pointer;transition:all 0.3s;}'
-            '.dot.active{background:#2563eb;width:18px;border-radius:3px;}'
-            '.slide-title{font-size:22px;font-weight:900;color:#f1f5f9;letter-spacing:-0.5px;line-height:1.2;margin-bottom:12px;min-height:52px;}'
-            '@media(max-width:768px){.slide-title{font-size:18px;min-height:44px;}}'
+            '.dots{display:flex;gap:5px;margin:6px 0 8px;}'
+            '.dot{width:5px;height:5px;border-radius:50%;background:rgba(255,255,255,0.15);cursor:pointer;transition:all 0.3s;}'
+            '.dot.active{background:#2563eb;width:16px;border-radius:3px;}'
+            '.slide-title{font-size:19px;font-weight:900;color:#f1f5f9;letter-spacing:-0.4px;line-height:1.2;margin-bottom:10px;min-height:46px;}'
             '.hi{color:#2563eb;}.hg{color:#f59e0b;}'
             '</style>'
             '<div>'
@@ -2743,7 +2815,7 @@ def page_landing():
             '<div class="tab-item active" id="t0" onclick="sw(0)">📊 Market Overview</div>'
             '<div class="tab-item" id="t1" onclick="sw(1)">💥 Squeeze Radar</div>'
             '<div class="tab-item" id="t2" onclick="sw(2)">💡 Smart Insights</div>'
-            '<div class="tab-item" id="t3" onclick="sw(3)">🎯 Score Breakdown</div>'
+            '<div class="tab-item" id="t3" onclick="sw(3)">🎯 Score</div>'
             '<div class="tab-item" id="t4" onclick="sw(4)">📈 BI Analytics</div>'
             '</div>'
             '<div class="dots">'
@@ -2754,9 +2826,9 @@ def page_landing():
             '<div class="dot" id="d4" onclick="sw(4)"></div>'
             '</div>'
             '<div id="h0" class="slide-title">Find Trending Stocks<br><span class="hi">Before the Crowd</span></div>'
-            '<div id="h1" class="slide-title" style="display:none">Scan For Short Squeeze<br><span class="hi">Candidates</span></div>'
-            '<div id="h2" class="slide-title" style="display:none">Smart Insights<br>in <span class="hi">Simple Language</span></div>'
-            '<div id="h3" class="slide-title" style="display:none">Premium <span class="hg">Score Breakdowns</span><br>&amp; Deep Analysis</div>'
+            '<div id="h1" class="slide-title" style="display:none">Short Squeeze<br><span class="hi">Candidates</span></div>'
+            '<div id="h2" class="slide-title" style="display:none">Plain-English<br><span class="hi">Insights</span></div>'
+            '<div id="h3" class="slide-title" style="display:none"><span class="hg">Score</span> Breakdown</div>'
             '<div id="h4" class="slide-title" style="display:none">BI Analytics &amp;<br><span class="hi">Opportunity Matrix</span></div>'
             '<div id="p0">' + DEMO[0] + '</div>'
             '<div id="p1" style="display:none">' + DEMO[1] + '</div>'
@@ -2778,8 +2850,9 @@ def page_landing():
             'setInterval(function(){sw((c+1)%5);},5000);'
             '</script>'
         )
-        components.html(hero_comp, height=500, scrolling=False)
-    st.markdown('</div>', unsafe_allow_html=True)  # close sw-hero-row
+        components.html(hero_comp, height=470, scrolling=False)
+
+    st.markdown('</div>', unsafe_allow_html=True)  # close hero-wrap
 
     # ── Trust bar ──
     st.markdown(f"""
@@ -2975,17 +3048,7 @@ def page_landing():
 
     st.markdown("<br>",unsafe_allow_html=True)
 
-    # ── Composite categories grid ──
-    st.markdown(f"""
-    <div style="padding:0 48px;">
-        <div style="display:flex;align-items:center;gap:12px;margin-bottom:8px;">
-            <div style="font-size:18px;font-weight:800;color:#e2e8f0;">🎯 Our Proprietary Signal Categories</div>
-            <span style="background:rgba(168,85,247,0.15);color:#c084fc;border:1px solid rgba(168,85,247,0.35);font-size:10px;font-weight:700;padding:3px 10px;border-radius:20px;white-space:nowrap;">✨ Unique to MarketSignalPro</span>
-        </div>
-        <div style="font-size:13px;color:#374f6e;margin-bottom:18px;">We combine multiple independent data signals into composite categories you won't find anywhere else. Each one has a specific multi-factor entry criterion.</div>
-    </div>
-    """, unsafe_allow_html=True)
-
+    # ── Composite categories grid — pure HTML CSS grid (no st.columns overflow issues) ──
     color_map={
         "🔥💥 Squeeze + Buzz":"#ef4444","💡 Hidden Movers":"#3b82f6","🎭 Social Catalyst":"#f97316",
         "🌡️ Sentiment Flip":"#ec4899","📉→📈 Fallen Angels":"#8b5cf6","🔬 Micro-Cap Movers":"#06b6d4",
@@ -2994,42 +3057,46 @@ def page_landing():
         "🔁 Mean Reversion":"#60a5fa","⚡🧲 Smart Money Signal":"#fbbf24","🌪️ Volatility Squeeze":"#c084fc",
         "🎯📊 Triple Lock":"#4ade80","🦈 Sustained Strength":"#34d399",
     }
-    cg_items=list(COMPOSITE_CATS.items())
-    # Wrap signal cards in styled container so we can make them mobile-friendly
-    st.markdown("""
+
+    # Build cards HTML
+    cat_cards_html = ""
+    for cat,(desc,tier) in COMPOSITE_CATS.items():
+        c = color_map.get(cat, BLUE)
+        if tier == "premium":
+            badge = f'<span style="background:rgba(245,158,11,.12);color:#f59e0b;font-size:9px;font-weight:700;padding:2px 7px;border-radius:4px;border:1px solid rgba(245,158,11,.3);white-space:nowrap;flex-shrink:0;">⭐ PRO</span>'
+        else:
+            badge = f'<span style="background:rgba(34,197,94,.1);color:#4ade80;font-size:9px;font-weight:700;padding:2px 7px;border-radius:4px;border:1px solid rgba(34,197,94,.3);white-space:nowrap;flex-shrink:0;">FREE</span>'
+        cat_cards_html += f"""
+        <div style="background:#0d1525;border:1px solid rgba(255,255,255,.07);border-left:3px solid {c};
+                    border-radius:10px;padding:11px 13px;min-height:72px;box-sizing:border-box;">
+            <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:6px;margin-bottom:5px;">
+                <div style="font-size:12px;font-weight:700;color:#e2e8f0;line-height:1.25;">{cat}</div>
+                {badge}
+            </div>
+            <div style="font-size:11px;color:#374f6e;line-height:1.45;">{desc}</div>
+        </div>"""
+
+    st.markdown(f"""
     <style>
-    .sw-signal-grid [data-testid="stHorizontalBlock"]{flex-wrap:wrap;gap:10px;}
-    .sw-signal-grid .card{padding:12px 14px !important;min-height:78px !important;}
-    @media (max-width:900px){
-        /* 2-column grid on mobile (instead of 1-column stack from global rule) */
-        .sw-signal-grid [data-testid="stHorizontalBlock"]{flex-wrap:wrap !important;gap:8px !important;}
-        .sw-signal-grid [data-testid="stHorizontalBlock"] [data-testid="column"]{
-            min-width:48% !important;max-width:48% !important;flex:1 1 48% !important;
-        }
-        .sw-signal-grid .card{
-            padding:8px 10px !important;
-            min-height:auto !important;
-            margin-bottom:6px !important;
-        }
-        .sw-signal-card-title{font-size:11px !important;line-height:1.3 !important;}
-        .sw-signal-card-desc{font-size:10px !important;line-height:1.4 !important;}
-        .sw-signal-card-badge{font-size:8px !important;padding:1px 5px !important;}
-    }
+    .msp-cat-hdr {{ max-width:1120px; margin:0 auto 14px; }}
+    .msp-cat-grid {{
+        max-width:1120px; margin:0 auto; width:100%;
+        display:grid;
+        grid-template-columns:repeat(3,minmax(0,1fr));
+        gap:9px 12px;
+    }}
+    @media(max-width:900px) {{ .msp-cat-grid {{ grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; }} }}
+    @media(max-width:560px) {{ .msp-cat-grid {{ grid-template-columns:1fr; }} }}
     </style>
-    <div class="sw-signal-grid">
+    <div class="msp-cat-hdr">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:7px;flex-wrap:wrap;">
+            <div style="font-size:17px;font-weight:800;color:#e2e8f0;">🎯 Our Proprietary Signal Categories</div>
+            <span style="background:rgba(168,85,247,0.14);color:#c084fc;border:1px solid rgba(168,85,247,0.3);font-size:9px;font-weight:700;padding:3px 9px;border-radius:20px;white-space:nowrap;">✨ Unique to MarketSignalPro</span>
+        </div>
+        <div style="font-size:12px;color:#374f6e;line-height:1.6;">17 composite categories combining RSI, MACD, volume, short interest &amp; social sentiment — engineered for real edge.</div>
+    </div>
+    <div class="msp-cat-grid">{cat_cards_html}</div>
     """, unsafe_allow_html=True)
-    cg=st.columns(3,gap="small")
-    for i,(cat,(desc,tier)) in enumerate(cg_items):
-        with cg[i%3]:
-            c=color_map.get(cat,BLUE)
-            tier_b=f'<span class="sw-signal-card-badge" style="background:rgba(245,158,11,.12);color:{GOLD};font-size:9px;font-weight:700;padding:2px 6px;border-radius:3px;border:1px solid rgba(245,158,11,.3);">⭐ PRO</span>' if tier=="premium" else f'<span class="sw-signal-card-badge" style="background:rgba(34,197,94,.1);color:#4ade80;font-size:9px;font-weight:700;padding:2px 6px;border-radius:3px;border:1px solid rgba(34,197,94,.3);">FREE</span>'
-            st.markdown(f"""<div class="card" style="border-left:3px solid {c};">
-                <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:5px;gap:6px;">
-                    <div class="sw-signal-card-title" style="font-size:13px;font-weight:700;color:#e2e8f0;">{cat}</div>{tier_b}
-                </div>
-                <div class="sw-signal-card-desc" style="font-size:11px;color:#374f6e;line-height:1.5;">{desc}</div>
-            </div>""",unsafe_allow_html=True)
-    st.markdown('</div>', unsafe_allow_html=True)
 
     _,pc,_=st.columns([2,1,2])
     with pc:
@@ -3325,7 +3392,7 @@ def _send_password_reset(email, reset_token):
         if resend_key:
             import requests as _r
             html = f"""<div style="font-family:Inter,sans-serif;background:#07090f;padding:40px;">
-                <h2 style="color:#2563eb;">Stock<span style="color:#f59e0b;">W</span>ins</h2>
+                <h2 style="color:#2563eb;">Market<span style="color:#f59e0b;">Signal</span>Pro</h2>
                 <h3 style="color:#e2e8f0;">Reset your password</h3>
                 <p style="color:#6b7fa0;">Click below to reset. Expires in 1 hour.</p>
                 <a href="{reset_url}" style="display:inline-block;padding:12px 28px;background:#2563eb;color:#fff;text-decoration:none;border-radius:8px;font-weight:700;">Reset Password →</a>
@@ -3351,7 +3418,7 @@ def _send_verification_email(email, code):
                 json={"from":st.secrets.get("EMAIL_FROM","MarketSignalPro <onboarding@resend.dev>"),"to":[email],
                       "subject":"Your MarketSignalPro verification code",
                       "html":f"""<div style="font-family:Inter,sans-serif;background:#07090f;padding:40px;color:#e2e8f0;">
-                        <h2>Stock<span style="color:#f59e0b;">W</span>ins</h2>
+                        <h2>Market<span style="color:#f59e0b;">Signal</span>Pro</h2>
                         <h3>Verify your email</h3>
                         <div style="font-size:42px;font-weight:900;letter-spacing:8px;color:#2563eb;padding:20px;background:#0d1525;border-radius:12px;text-align:center;">{code}</div>
                         <p style="color:#6b7fa0;margin-top:20px;">Expires in 10 minutes.</p>
@@ -6622,7 +6689,7 @@ def _send_verification_email(email, code):
                       "to":[email],
                       "subject":"Your MarketSignalPro verification code",
                       "html":f"""<div style="font-family:Inter,sans-serif;background:#07090f;color:#e2e8f0;padding:40px;">
-                        <h2 style="color:#2563eb;">Stock<span style="color:#f59e0b;">W</span>ins</h2>
+                        <h2 style="color:#2563eb;">Market<span style="color:#f59e0b;">Signal</span>Pro</h2>
                         <h3>Verify your email</h3>
                         <p style="color:#6b7fa0;">Your verification code is:</p>
                         <div style="font-size:36px;font-weight:800;letter-spacing:8px;color:#2563eb;padding:20px;background:#0d1525;border-radius:12px;text-align:center;">{code}</div>
