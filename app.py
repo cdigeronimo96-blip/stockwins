@@ -4017,15 +4017,16 @@ def page_detail():
     # Report header
     h1,h2,h3=st.columns([3,2,2],gap="small")
     with h1:
-    st.markdown(f"""<div class="disc-cat-header">
-<div class="disc-cat-title">{sel}</div>
-<div class="disc-cat-desc">{desc_str}</div>
-<div class="disc-cat-meta">
-{tier_str}
-<span class="disc-meta-pill">📊 Real-time Yahoo Finance data</span>
-<span class="disc-meta-pill">🔄 Updates every market session</span>
-</div>
-</div>""", unsafe_allow_html=True)
+st.markdown(
+        f'<div class="disc-cat-header">'
+        f'<div class="disc-cat-title">{sel}</div>'
+        f'<div class="disc-cat-desc">{desc_str}</div>'
+        f'<div class="disc-cat-meta">'
+        f'{tier_str}'
+        f'<span class="disc-meta-pill">📊 Real-time Yahoo Finance data</span>'
+        f'<span class="disc-meta-pill">🔄 Updates every market session</span>'
+        f'</div></div>',
+        unsafe_allow_html=True)
     with h2:
         st.markdown(f"""<div style="text-align:right;padding:4px 0;">
             <div style="font-family:'JetBrains Mono',monospace;font-size:36px;font-weight:800;color:#e2e8f0;letter-spacing:-1px;">${price:,.2f}</div>
