@@ -3885,9 +3885,9 @@ st.markdown('<div class="disc-section-label">⭐ Composite Categories — Market
     # Render composite cats in a grid (4 per row)
 comp_items = list(COMPOSITE_CATS.items())
 for row_start in range(0, len(comp_items), 4):
-cols = st.columns(4, gap="small")
+    cols = st.columns(4, gap="small")
 for col_idx, (cat, (desc, tier)) in enumerate(comp_items[row_start:row_start+4]):
-with cols[col_idx]:
+    with cols[col_idx]:
 is_l = tier=="premium" and not is_premium()
 safe = cat.replace(" ","_").replace("+","p").replace("→","r").replace("🌡️","T").replace("📉","D").replace("📈","U").replace("⚡","E")[:30]
 is_active = cat==sel
