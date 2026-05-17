@@ -3910,7 +3910,7 @@ for col_idx, cat in enumerate(std_items[row_start:row_start+4]):
                 st.session_state.discover_cat=cat; st.rerun()
 
     # Spacing
-    st.markdown('<div style="height:18px;"></div>', unsafe_allow_html=True)
+st.markdown('<div style="height:18px;"></div>', unsafe_allow_html=True)
 
     # ── Results area immediately below ──
     if is_locked:
