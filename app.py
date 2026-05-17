@@ -3401,7 +3401,7 @@ def _send_password_reset(email, reset_token):
             </div>"""
             resp = _r.post("https://api.resend.com/emails",
                 headers={"Authorization":f"Bearer {resend_key}","Content-Type":"application/json"},
-                json={"from":st.secrets.get("EMAIL_FROM","MarketSignalPro <onboarding@resend.dev>"),"to":[email],
+                json={"from":st.secrets.get("EMAIL_FROM","MarketSignalPro <support@marketsignalpro.com>"),"to":[email],
                       "subject":"Reset your MarketSignalPro password","html":html},
                 timeout=10)
             if resp.status_code in (200,201): return True, None
@@ -3416,7 +3416,7 @@ def _send_verification_email(email, code):
             import requests as _r
             resp = _r.post("https://api.resend.com/emails",
                 headers={"Authorization":f"Bearer {resend_key}","Content-Type":"application/json"},
-                json={"from":st.secrets.get("EMAIL_FROM","MarketSignalPro <onboarding@resend.dev>"),"to":[email],
+                json={"from":st.secrets.get("EMAIL_FROM","MarketSignalPro <support@marketsignalpro.com>"),"to":[email],
                       "subject":"Your MarketSignalPro verification code",
                       "html":f"""<div style="font-family:Inter,sans-serif;background:#07090f;padding:40px;color:#e2e8f0;">
                         <h2>Market<span style="color:#f59e0b;">Signal</span>Pro</h2>
@@ -6686,7 +6686,7 @@ def _send_verification_email(email, code):
             import requests as _r
             resp = _r.post("https://api.resend.com/emails",
                 headers={"Authorization":f"Bearer {resend_key}","Content-Type":"application/json"},
-                json={"from":st.secrets.get("EMAIL_FROM","MarketSignalPro <onboarding@resend.dev>"),
+                json={"from":st.secrets.get("EMAIL_FROM","MarketSignalPro <support@marketsignalpro.com>"),
                       "to":[email],
                       "subject":"Your MarketSignalPro verification code",
                       "html":f"""<div style="font-family:Inter,sans-serif;background:#07090f;color:#e2e8f0;padding:40px;">
