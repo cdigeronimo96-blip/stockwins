@@ -4017,7 +4017,7 @@ def page_detail():
     # Report header
     h1,h2,h3=st.columns([3,2,2],gap="small")
     with h1:
-st.markdown(
+    st.markdown(
         f'<div class="disc-cat-header">'
         f'<div class="disc-cat-title">{sel}</div>'
         f'<div class="disc-cat-desc">{desc_str}</div>'
